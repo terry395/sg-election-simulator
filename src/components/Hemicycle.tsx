@@ -41,29 +41,37 @@ export function hemicycleLayout(total: number): { seats: Seat[]; dotR: number } 
 /** empty (undeclared) seats are drawn as hollow rings so they never look like a party colour */
 const UNDECLARED = 'transparent'
 
-/** Order seats: government on the left, undeclared in the middle, opposition from the right. */
-export function seatColors(seats: Record<string, number>, total: number, parties: Record<string, Party>): { color: string; party: string | null }[] {
+/**
+ * Order seats: government on the left, undeclared in the middle, opposition from the right.
+ * `government` lists coalition members (largest first on the left); by default the PAP, or else the largest party.
+ */
+export function seatColors(seats: Record<string, number>, total: number, parties: Record<string, Party>, government?: string[]): { color: string; party: string | null }[] {
   const entries = Object.entries(seats).filter(([, n]) => n > 0)
-  const gov = entries.find(([p]) => p === PAP) ?? entries.sort((a, b) => b[1] - a[1])[0]
-  const others = entries.filter((e) => e !== gov).sort((a, b) => a[1] - b[1]) // smallest nearest the middle
+  const fallback = entries.find(([p]) => p === PAP) ?? [...entries].sort((a, b) => b[1] - a[1])[0]
+  const govEntries = government?.length
+    ? entries.filter(([p]) => government.includes(p)).sort((a, b) => b[1] - a[1])
+    : fallback ? [fallback] : []
+  const others = entries.filter((e) => !govEntries.includes(e)).sort((a, b) => a[1] - b[1]) // smallest nearest the middle
   const out: { color: string; party: string | null }[] = []
-  if (gov) for (let i = 0; i < gov[1]; i++) out.push({ color: parties[gov[0]]?.color ?? '#999', party: gov[0] })
+  for (const [p, n] of govEntries) for (let i = 0; i < n; i++) out.push({ color: parties[p]?.color ?? '#999', party: p })
   const declared = entries.reduce((s, [, n]) => s + n, 0)
   for (let i = 0; i < total - declared; i++) out.push({ color: UNDECLARED, party: null })
   for (const [p, n] of others) for (let i = 0; i < n; i++) out.push({ color: parties[p]?.color ?? '#999', party: p })
   return out.slice(0, total)
 }
 
-export function Hemicycle({ seats, total, parties, ncmp, width = 300, caption }: {
+export function Hemicycle({ seats, total, parties, ncmp, width = 300, caption, government }: {
   seats: Record<string, number>
   total: number
   parties: Record<string, Party>
   ncmp?: { party: string; seats: number }[]
   width?: number
   caption?: string
+  /** coalition members to group on the government side */
+  government?: string[]
 }) {
   const layout = useMemo(() => hemicycleLayout(total), [total])
-  const colors = seatColors(seats, total, parties)
+  const colors = seatColors(seats, total, parties, government)
   // seats that just changed colour get a short "pop" animation
   const prev = useRef<string[]>([])
   const popped = colors.map((c, i) => c.party !== null && prev.current[i] !== undefined && prev.current[i] !== c.color)
@@ -71,7 +79,8 @@ export function Hemicycle({ seats, total, parties, ncmp, width = 300, caption }:
 
   const majority = Math.floor(total / 2) + 1
   const ranked = Object.entries(seats).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1])
-  const leader = ranked[0]
+  const coalition = government && government.length > 1 ? government.filter((p) => seats[p]) : null
+  const leader: [string, number] | undefined = coalition ? [coalition.join('–'), coalition.reduce((s, p) => s + seats[p], 0)] : ranked[0]
   const declared = ranked.reduce((s, [, n]) => s + n, 0)
   const ncmpSeats = (ncmp ?? []).flatMap((n) => Array.from({ length: n.seats }, () => n.party))
 
@@ -86,11 +95,11 @@ export function Hemicycle({ seats, total, parties, ncmp, width = 300, caption }:
             stroke={colors[i]?.party ? 'none' : '#64748b'} strokeWidth={colors[i]?.party ? 0 : layout.dotR * 0.28}
             className={popped[i] ? 'seat-pop' : undefined} style={{ transition: 'fill .45s ease', transformOrigin: `${s.x}px ${-s.y}px`, transformBox: 'fill-box' }} />
         ))}
-        <text x="0" y="-0.12" textAnchor="middle" fontSize="0.26" fontWeight="800" fill={leader ? mix(parties[leader[0]]?.color ?? '#e2e8f0', '#ffffff', 0.35) : '#94a3b8'} style={{ fontVariantNumeric: 'tabular-nums' }}>
+        <text x="0" y="-0.12" textAnchor="middle" fontSize="0.26" fontWeight="800" fill={leader ? mix(parties[coalition ? coalition[0] : leader[0]]?.color ?? '#e2e8f0', '#ffffff', 0.35) : '#94a3b8'} style={{ fontVariantNumeric: 'tabular-nums' }}>
           {leader ? leader[1] : 0}
         </text>
         <text x="0" y="0.02" textAnchor="middle" fontSize="0.085" fill="#94a3b8">
-          {leader ? `${leader[0]} · majority ${majority}` : `majority ${majority}`}
+          {leader ? `${coalition ? 'coalition' : leader[0]} · majority ${majority}` : `majority ${majority}`}
         </text>
       </svg>
       {ncmpSeats.length > 0 && (

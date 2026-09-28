@@ -94,7 +94,8 @@ function Shell() {
   }, [])
 
   return (
-    <div className="flex h-full flex-col">
+    // phones: the whole page scrolls (map, then panel); desktop: fixed layout with a scrolling side panel
+    <div className="flex h-full flex-col overflow-y-auto md:overflow-hidden">
       <Header />
       <SharedNotice />
       <WelcomeBanner />
@@ -107,14 +108,14 @@ function Shell() {
           </button>
         ))}
       </nav>
-      <main className="flex min-h-0 flex-1 flex-col md:flex-row">
+      <main className="flex shrink-0 flex-col md:min-h-0 md:flex-1 md:shrink md:flex-row">
         <div className="relative h-[55vh] shrink-0 md:h-auto md:flex-1">
           <MapView />
           {tab === 'night' && <NightOverlay />}
           {tab === 'night' && <NightParliament />}
           <MapLegend />
         </div>
-        <aside key={tab} className="scroll-thin min-h-0 flex-1 overflow-y-auto border-l border-slate-800 bg-slate-950 md:w-[420px] md:flex-none">
+        <aside key={tab} className="scroll-thin border-slate-800 bg-slate-950 md:min-h-0 md:w-[420px] md:flex-none md:overflow-y-auto md:border-l">
           {tab === 'draw' && <DrawPanel />}
           {tab === 'contests' && <ContestPanel />}
           {tab === 'forecast' && <ForecastPanel />}
@@ -251,7 +252,7 @@ function Header() {
         </div>
         <span className="tabular text-slate-300">{fmt(electors)}</span>
       </div>
-      <div className="ml-auto flex items-center gap-1.5">
+      <div className="ml-auto flex flex-wrap items-center gap-1.5">
         {msg && <span className="text-xs text-emerald-300">{msg}</span>}
         <Button onClick={() => useStore.getState().showPartyInfo('PAP')} title="Who are the parties? Beginner-friendly profiles"><Landmark size={14} aria-hidden /> Parties</Button>
         <a href={GUIDE_URL} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 rounded-md border border-rose-500/70 bg-rose-600/15 px-2.5 py-1.5 text-xs font-medium text-rose-100 hover:bg-rose-600/30" title="Step-by-step beginner guide"><BookOpen size={14} aria-hidden /> Guide</a>

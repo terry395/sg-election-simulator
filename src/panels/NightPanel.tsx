@@ -4,6 +4,8 @@ import { useDerived } from '../state/derived'
 import { useNight } from '../state/night'
 import { Button, PartyBadge, Section, ShareBar, Swatch, pct, fmt } from '../components/ui'
 import { FastForward, Info, Newspaper, Pause, Play, RotateCcw, SkipForward } from 'lucide-react'
+import { CoalitionBuilder } from '../components/CoalitionBuilder'
+import { coalitionName, isHung, majorityOf } from '../model/coalition'
 import { DISCLAIMER_SHORT } from '../data/disclaimer'
 import { SeatBar } from '../components/SeatBar'
 import { Hemicycle } from '../components/Hemicycle'
@@ -58,6 +60,7 @@ export function NightPanel() {
       leaders: Object.fromEntries(Object.entries(contests).map(([id, c]) => [id, c.leaders])),
       holders: Object.fromEntries(Object.entries(stats.byId).map(([id, s]) => [id, notionalHolder(s.pap0, s.mainOpp)])),
       prevNational: Object.fromEntries(Object.entries(ge.parties).map(([p, v]) => [p, v.national])),
+      contests,
     }
     night.start(plan.constituencies, result, buildTimeline(plan.constituencies, result, seed, news), seed)
   }
@@ -130,7 +133,7 @@ function NightLive({ onRestart }: { onRestart: () => void }) {
           <Button onClick={night.skipToEnd} disabled={done} title="Skip to the end">Skip <FastForward size={14} aria-hidden /></Button>
         </div>
         <div className="mt-3 flex justify-center">
-          <Hemicycle seats={d.seats} total={d.total} parties={partyMap} ncmp={done ? night.result!.ncmp : undefined} width={330} />
+          <Hemicycle seats={d.seats} total={d.total} parties={partyMap} ncmp={done ? night.result!.ncmp : undefined} width={330} government={night.coalition ?? undefined} />
         </div>
         <div className="mt-2">
           <SeatBar seats={d.seats} total={d.total} parties={partyMap} />
@@ -265,9 +268,14 @@ function FinalSummary({ plan, partyMap }: { plan: Constituency[]; partyMap: Reco
   const ge = useStore((s) => s.data)!.ge
   const { stats } = useDerived()
   const total = plan.reduce((s, c) => s + c.seats, 0)
+  const coalition = useNight((s) => s.coalition)
+  const setCoalition = useNight((s) => s.setCoalition)
+  const hung = isHung(result.seatsByParty, total)
   const gov = result.government
-  const govSeats = result.seatsByParty[gov] ?? 0
-  const verdict = govSeats > total / 2 ? `${gov === PAP ? 'PAP' : partyMap[gov]?.name ?? gov} forms the government` : 'Hung Parliament — no party has a majority'
+  const govSeats = coalition ? coalition.reduce((s, p) => s + (result.seatsByParty[p] ?? 0), 0) : result.seatsByParty[gov] ?? 0
+  const verdict = coalition
+    ? `${coalitionName(coalition)} coalition forms the government`
+    : !hung ? `${gov === PAP ? 'PAP' : partyMap[gov]?.name ?? gov} forms the government` : 'Hung Parliament — no party has a majority'
   const gains = plan.map((c, i) => ({ c, r: result.seats[i] })).filter(({ c, r }) => {
     const s = stats.byId[c.id]
     return s && !r.walkover && r.winner !== notionalHolder(s.pap0, s.mainOpp)
@@ -276,8 +284,16 @@ function FinalSummary({ plan, partyMap }: { plan: Constituency[]; partyMap: Reco
     <Section title="Result">
       <div className="rounded-md bg-gradient-to-r from-slate-800 to-slate-900 p-3">
         <div className="text-base font-bold">{verdict}</div>
-        <div className="text-xs text-slate-300">{govSeats} of {total} seats{govSeats >= Math.ceil((total * 2) / 3) ? ' · two-thirds supermajority' : govSeats > total / 2 ? ' · supermajority lost' : ''}</div>
+        <div className="text-xs text-slate-300">
+          {hung && !coalition ? `Largest party: ${gov} with ${govSeats} of ${total} seats · ${majorityOf(total)} needed` : `${govSeats} of ${total} seats${govSeats >= Math.ceil((total * 2) / 3) ? ' · two-thirds supermajority' : govSeats > total / 2 && !coalition ? ' · supermajority lost' : ''}`}
+          {coalition && <> · <button className="text-violet-300 underline-offset-2 hover:underline" onClick={() => setCoalition(null)}>change</button></>}
+        </div>
       </div>
+      {hung && (
+        <CoalitionBuilder seatsByParty={result.seatsByParty} votesByParty={result.votesByParty} totalValid={result.totalValid} total={total}
+          contests={contests} parties={partyMap} formed={coalition} onForm={setCoalition} />
+      )}
+      {coalition && <p className="mt-1 text-[10px] text-slate-500">Non-Constituency MP offers below are as computed on the night, before coalition talks.</p>}
       <table className="mt-2 w-full text-xs">
         <thead className="text-[10px] uppercase text-slate-500"><tr><th className="text-left font-medium">Party</th><th className="text-right font-medium">Seats</th><th className="text-right font-medium">Vote</th><th className="text-right font-medium">vs 2025</th></tr></thead>
         <tbody>
@@ -345,6 +361,7 @@ export function NightOverlay() {
 /** Live parliament chart floating over the map during election night. */
 export function NightParliament() {
   const result = useNight((s) => s.result)
+  const coalition = useNight((s) => s.coalition)
   const done = useNight((s) => s.cursor >= s.events.length && s.events.length > 0)
   const { partyMap } = useDerived()
   const d = useDeclared()
@@ -354,7 +371,7 @@ export function NightParliament() {
       <div className="mb-0.5 flex items-center justify-between text-[10px] uppercase tracking-wider text-slate-400">
         <span>Parliament</span><span className="tabular">{d.declared}/{d.total} declared</span>
       </div>
-      <Hemicycle seats={d.seats} total={d.total} parties={partyMap} ncmp={done ? result.ncmp : undefined} width={240} />
+      <Hemicycle seats={d.seats} total={d.total} parties={partyMap} ncmp={done ? result.ncmp : undefined} width={240} government={coalition ?? undefined} />
     </div>
   )
 }

@@ -19,4 +19,9 @@ describe('hemicycle', () => {
     const c = seatColors({ PAP: 5, WP: 3, PSP: 1 }, 12, parties)
     expect(c.map((x) => x.party)).toEqual(['PAP', 'PAP', 'PAP', 'PAP', 'PAP', null, null, null, 'PSP', 'WP', 'WP', 'WP'])
   })
+  it('groups a coalition government on the left', () => {
+    const parties = Object.fromEntries(DEFAULT_PARTIES.map((p) => [p.id, p]))
+    const c = seatColors({ PAP: 4, WP: 3, PSP: 2, SDP: 1 }, 10, parties, ['PSP', 'WP'])
+    expect(c.map((x) => x.party)).toEqual(['WP', 'WP', 'WP', 'PSP', 'PSP', 'SDP', 'PAP', 'PAP', 'PAP', 'PAP'])
+  })
 })

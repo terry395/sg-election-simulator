@@ -10,6 +10,8 @@ import type { Swings } from '../types'
 import { PAP } from '../data/parties'
 import { Dices, Info, Play } from 'lucide-react'
 import { DISCLAIMER_SHORT } from '../data/disclaimer'
+import { CoalitionBuilder } from '../components/CoalitionBuilder'
+import { HUNG_SCENARIO, coalitionName, isHung, majorityOf } from '../model/coalition'
 
 const SCENARIOS: { label: string; hint: string; swings: Partial<Swings> }[] = [
   { label: 'GE2025 repeat', hint: 'No change from 2025', swings: {} },
@@ -18,6 +20,7 @@ const SCENARIOS: { label: string; hint: string; swings: Partial<Swings> }[] = [
   { label: 'Opposition surge', hint: 'PAP −8, WP +2', swings: { national: -8, party: { WP: 2 } } },
   { label: 'Youthquake', hint: 'Young voters swing hard to the opposition', swings: { demo: { a0: -14, a1: -4, a3: 3 } } },
   { label: 'Heartland squeeze', hint: 'Cost of living bites in HDB estates', swings: { demo: { h0: -10, h1: -7, h2: -4, h3: 2, h4: 3 } } },
+  { label: 'Hung parliament', hint: 'A landslide against the PAP spread across several opposition parties, so no one wins a majority', swings: HUNG_SCENARIO },
 ]
 
 export function ForecastPanel() {
@@ -32,6 +35,10 @@ export function ForecastPanel() {
   const total = stats.seats
   const [mc, setMc] = useState<McOutput | null>(null)
   const [running, setRunning] = useState(false)
+  const [picked, setPicked] = useState<string[] | null>(null)
+  const hung = isHung(projection.seatsByParty, total)
+  // a chosen coalition only stands while it still commands a majority of the current projection
+  const coalition = hung && picked && picked.reduce((s, p) => s + (projection.seatsByParty[p] ?? 0), 0) >= majorityOf(total) ? picked : null
   const worker = useRef<Worker | null>(null)
   const job = useRef(0)
 
@@ -64,8 +71,9 @@ export function ForecastPanel() {
     <div>
       <Section title="Projected parliament">
         <div className="mb-2 flex justify-center">
-          <Hemicycle seats={projection.seatsByParty} total={total} parties={partyMap} ncmp={projection.ncmp} width={260} />
+          <Hemicycle seats={projection.seatsByParty} total={total} parties={partyMap} ncmp={projection.ncmp} width={260} government={coalition ?? undefined} />
         </div>
+        {hung && <p className="mb-2 text-center text-xs font-semibold text-violet-200">{coalition ? `${coalitionName(coalition)} coalition governs` : 'Hung parliament: no party has a majority'}</p>}
         <SeatBar seats={projection.seatsByParty} total={total} parties={partyMap} />
         <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
           {Object.entries(projection.seatsByParty).sort((a, b) => b[1] - a[1]).map(([p, n]) => (
@@ -81,6 +89,10 @@ export function ForecastPanel() {
           <Button variant="subtle" onClick={runMc} disabled={running}>{running ? 'Simulating…' : <><Dices size={14} aria-hidden /> 2,000 simulations</>}</Button>
         </div>
         <p className="mt-2 flex items-start gap-1 text-[10px] text-slate-500"><Info size={12} className="mt-px shrink-0" aria-hidden />Simulated scenario. {DISCLAIMER_SHORT}</p>
+        {hung && (
+          <CoalitionBuilder key={JSON.stringify(projection.seatsByParty)} seatsByParty={projection.seatsByParty} votesByParty={projection.votesByParty} totalValid={projection.totalValid}
+            total={total} contests={contests} parties={partyMap} formed={coalition} onForm={setPicked} />
+        )}
         {errors > 0 && <p className="mt-2 text-[11px] text-amber-300">Your map still has {errors} rule errors (see Draw). You can still simulate it.</p>}
         {mc && <McSummary mc={mc} />}
       </Section>

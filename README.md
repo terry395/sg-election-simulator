@@ -19,6 +19,7 @@ An interactive web app for political enthusiasts: redraw Singapore's electoral b
 4. **Election night**: polls close at 8pm, then sample counts arrive (±4%). Declarations follow through the night, smaller SMCs first and big GRCs last, with recounts in close seats. The map fills in live alongside the seat tally, majority call, gains, popular vote vs GE2025 and NCMP allocation. Occasional news flashes (first result, seats changing hands, photo finishes, majority and supermajority calls, final round-up) appear in the announcements feed and as a ticker over the map.
 
 - **Anchor leaders:** pick each party's team leader per seat from the real GE2025 candidates, or type any name. Well-known figures carry a suggested vote effect relative to the 2025 anchor.
+- **Coalition builder:** when no party wins a majority, suggested coalitions and a free-form builder rate each combination (Likely to Unlikely) with a transparent, point-by-point explanation based on ideology, number of partners, minimal-winning arithmetic, clashes in this election, documented party links, parliamentary experience and vote share. The chosen coalition can form the government. A "Hung parliament" forecast preset makes it easy to try.
 - **Live parliament chart** that fills seat by seat on election night (NCMP seats shown as rings), also shown in the forecast.
 - **Parties:** short, neutral beginner profiles of every party, from the top bar or any party badge.
 - Auto-draw names are always unique real place names, such as compass directions or URA neighbourhoods, never numbers.

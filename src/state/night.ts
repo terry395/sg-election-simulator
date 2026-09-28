@@ -16,6 +16,9 @@ interface NightState {
   speed: number
   seed: number
   revealed: Record<string, Reveal>
+  /** coalition chosen to govern after a hung result */
+  coalition: string[] | null
+  setCoalition: (c: string[] | null) => void
   start: (plan: Constituency[], result: ElectionResult, events: NightEvent[], seed: number) => void
   setPlaying: (v: boolean) => void
   setSpeed: (v: number) => void
@@ -48,7 +51,9 @@ export const useNight = create<NightState>((set, get) => ({
   speed: 6,
   seed: 1,
   revealed: {},
-  start: (plan, result, events, seed) => set({ plan, result, events, seed, t: -5, cursor: 0, revealed: {}, playing: true }),
+  coalition: null,
+  setCoalition: (coalition) => set({ coalition }),
+  start: (plan, result, events, seed) => set({ plan, result, events, seed, t: -5, cursor: 0, revealed: {}, playing: true, coalition: null }),
   setPlaying: (playing) => set({ playing }),
   setSpeed: (speed) => set({ speed }),
   advance: (dt) => {
@@ -70,7 +75,7 @@ export const useNight = create<NightState>((set, get) => ({
     const e = s.events[s.cursor]
     if (e) set(applyUntil(s, e.t))
   },
-  reset: () => set({ result: null, plan: null, events: [], t: -5, cursor: 0, revealed: {}, playing: false }),
+  reset: () => set({ result: null, plan: null, events: [], t: -5, cursor: 0, revealed: {}, playing: false, coalition: null }),
 }))
 
 if (import.meta.env.DEV) (window as unknown as { __night: typeof useNight }).__night = useNight

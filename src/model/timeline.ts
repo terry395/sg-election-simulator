@@ -1,6 +1,7 @@
-import type { Constituency } from '../types'
+import type { Constituency, Contest } from '../types'
 import type { ElectionResult, SeatResult } from './swing'
 import { rng } from './rng'
+import { coalitionName, suggestCoalitions } from './coalition'
 
 /** Minutes after polls close at 8pm. */
 export type NightEvent =
@@ -20,6 +21,8 @@ export interface NewsContext {
   holders?: Record<string, string>
   /** party → GE2025 national vote share */
   prevNational?: Record<string, number>
+  /** line-ups, used to suggest coalitions after a hung result */
+  contests?: Record<string, Contest>
 }
 
 export const POLLS_CLOSE = 20 * 60
@@ -181,6 +184,12 @@ function buildNews(plan: Constituency[], result: ElectionResult, ev: NightEvent[
   add(last + 5, 'analysis', 'All results declared',
     `${govTotal > total / 2 ? `${gov} forms the government with ${govTotal} of ${total} seats` : `No party has a majority: ${gov} is the largest with ${govTotal} of ${total} seats`} and ${pc(govShare)} of the national vote${swing}. Final tally: ${tally(result.seatsByParty)}.`,
     undefined, true)
+  if (govTotal <= total / 2) {
+    const [top] = suggestCoalitions({ ...result, total, contests: ctx.contests ?? {} }, 1)
+    add(last + 7, 'breaking', 'Hung parliament: coalition talks expected',
+      `No party can govern alone for the first time since 1959.${top ? ` The most workable combination on paper is ${coalitionName(top.members)}, with ${top.seats} seats.` : ''} Use the coalition builder in the Result panel to explore the options.`,
+      undefined, true)
+  }
   return out
 }
 
