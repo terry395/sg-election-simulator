@@ -4,6 +4,7 @@ import { useDerived } from '../state/derived'
 import { useNight } from '../state/night'
 import { Button, PartyBadge, Section, ShareBar, pct, fmt } from '../components/ui'
 import { SeatBar } from '../components/SeatBar'
+import { Hemicycle } from '../components/Hemicycle'
 import { buildTimeline, clock, type NightEvent } from '../model/timeline'
 import { runElection, type SeatResult } from '../model/swing'
 import { rng } from '../model/rng'
@@ -97,7 +98,7 @@ export function NightPanel() {
 
 function NightLive({ onRestart }: { onRestart: () => void }) {
   const night = useNight()
-  const { partyMap, stats } = useDerived()
+  const { partyMap, stats, contests } = useDerived()
   const setActive = useStore((s) => s.setActive)
   const d = useDeclared()
   const done = night.cursor >= night.events.length
@@ -120,7 +121,10 @@ function NightLive({ onRestart }: { onRestart: () => void }) {
           </div>
           <Button onClick={night.skipToEnd} disabled={done}>Skip ⏩</Button>
         </div>
-        <div className="mt-3">
+        <div className="mt-3 flex justify-center">
+          <Hemicycle seats={d.seats} total={d.total} parties={partyMap} ncmp={done ? night.result!.ncmp : undefined} width={330} />
+        </div>
+        <div className="mt-2">
           <SeatBar seats={d.seats} total={d.total} parties={partyMap} />
           <div className="mt-1 text-[11px] text-slate-400">{d.declared} of {d.total} seats declared</div>
         </div>
@@ -146,7 +150,7 @@ function NightLive({ onRestart }: { onRestart: () => void }) {
             const s = stats.byId[e.cid]
             return (
               <li key={`${e.kind}-${e.cid}`} className={`rounded-md border border-slate-800 p-2 text-xs ${k === 0 ? 'flash' : ''}`} onClick={() => setActive(e.cid)}>
-                <EventLine e={e} c={it.c} r={it.r} partyMap={partyMap} holder={s ? notionalHolder(s.pap0, s.mainOpp) : PAP} />
+                <EventLine e={e} c={it.c} r={it.r} partyMap={partyMap} holder={s ? notionalHolder(s.pap0, s.mainOpp) : PAP} leaders={contests[e.cid]?.leaders} />
               </li>
             )
           })}
@@ -160,9 +164,9 @@ function NightLive({ onRestart }: { onRestart: () => void }) {
   )
 }
 
-function EventLine({ e, c, r, partyMap, holder }: { e: NightEvent; c: Constituency; r: SeatResult; partyMap: Record<string, Party>; holder: string }) {
+function EventLine({ e, c, r, partyMap, holder, leaders }: { e: NightEvent; c: Constituency; r: SeatResult; partyMap: Record<string, Party>; holder: string; leaders?: Record<string, string> }) {
   const time = <span className="tabular text-slate-500">{clock(e.t)}</span>
-  if (e.kind === 'walkover') return <div>{time} <b>{c.name}</b> — <PartyBadge party={partyMap[r.winner]} small /> returned unopposed on Nomination Day</div>
+  if (e.kind === 'walkover') return <div>{time} <b>{c.name}</b> — <PartyBadge party={partyMap[r.winner]} small />{leaders?.[r.winner] ? ` team led by ${leaders[r.winner]}` : ''} returned unopposed on Nomination Day</div>
   if (e.kind === 'sample') {
     const sorted = Object.entries(e.shares).sort((a, b) => b[1] - a[1])
     return (
@@ -182,6 +186,12 @@ function EventLine({ e, c, r, partyMap, holder }: { e: NightEvent; c: Constituen
         <b>{c.name} {c.type}</b>
         {gain ? <span className="rounded bg-amber-400 px-1 text-[10px] font-bold text-slate-900">{r.winner} GAIN from {holder}</span> : <span className="text-[10px] text-slate-500">{r.winner} hold</span>}
       </div>
+      {leaders?.[r.winner] && (
+        <div className="mt-0.5 text-[11px] text-slate-300">
+          {c.type === 'GRC' ? 'Team led by' : 'Elected:'} <b>{leaders[r.winner]}</b>
+          {r.runnerUp && leaders[r.runnerUp] ? <span className="text-slate-500"> · defeated {r.runnerUp} {c.type === 'GRC' ? 'team led by' : ''} {leaders[r.runnerUp]}</span> : null}
+        </div>
+      )}
       <div className="mt-1"><ShareBar height={6} parts={sorted.map(([p, v]) => ({ color: partyMap[p]?.color ?? '#999', value: v, label: p }))} /></div>
       <div className="mt-0.5 flex flex-wrap gap-x-3 text-[11px] text-slate-400">
         {sorted.map(([p, v]) => <span key={p}>{p} {pct(v, 2)} ({fmt(r.votes[p])})</span>)}
@@ -194,6 +204,7 @@ function EventLine({ e, c, r, partyMap, holder }: { e: NightEvent; c: Constituen
 
 function FinalSummary({ plan, partyMap }: { plan: Constituency[]; partyMap: Record<string, Party> }) {
   const result = useNight((s) => s.result)!
+  const { contests } = useDerived()
   const ge = useStore((s) => s.data)!.ge
   const { stats } = useDerived()
   const total = plan.reduce((s, c) => s + c.seats, 0)
@@ -228,11 +239,12 @@ function FinalSummary({ plan, partyMap }: { plan: Constituency[]; partyMap: Reco
           })}
         </tbody>
       </table>
+      <p className="mt-2 rounded border border-amber-700/50 bg-amber-950/30 px-2 py-1 text-[11px] text-amber-100">⚠️ A simulated election for fun, based on your own settings. Not a poll, survey or official projection.</p>
       <p className="mt-1 text-[10px] text-slate-500">National vote shares compare against all valid votes nationwide (GE2025 PAP {pct(ge.parties.PAP.national)}).</p>
       {gains.length > 0 && (
         <div className="mt-2 text-xs">
           <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Changing hands</div>
-          {gains.map(({ c, r }) => <div key={c.id}><PartyBadge party={partyMap[r.winner]} small /> {c.name} {c.type === 'GRC' ? `(${c.seats})` : ''}</div>)}
+          {gains.map(({ c, r }) => <div key={c.id}><PartyBadge party={partyMap[r.winner]} small /> {c.name} {c.type === 'GRC' ? `(${c.seats})` : ''}{contests[c.id]?.leaders?.[r.winner] ? <span className="text-slate-400"> · {contests[c.id].leaders![r.winner]}</span> : null}</div>)}
         </div>
       )}
       {result.ncmp.length > 0 && (
@@ -268,6 +280,23 @@ export function NightOverlay() {
           {leader[0]} wins a majority — {leader[1]} seats declared
         </div>
       )}
+    </div>
+  )
+}
+
+/** Live parliament chart floating over the map during election night. */
+export function NightParliament() {
+  const result = useNight((s) => s.result)
+  const done = useNight((s) => s.cursor >= s.events.length && s.events.length > 0)
+  const { partyMap } = useDerived()
+  const d = useDeclared()
+  if (!result) return null
+  return (
+    <div className="pointer-events-none absolute bottom-10 right-3 z-10 hidden w-64 rounded-xl bg-slate-950/85 p-2.5 shadow-xl ring-1 ring-slate-700 backdrop-blur sm:block">
+      <div className="mb-0.5 flex items-center justify-between text-[10px] uppercase tracking-wider text-slate-400">
+        <span>Parliament</span><span className="tabular">{d.declared}/{d.total} declared</span>
+      </div>
+      <Hemicycle seats={d.seats} total={d.total} parties={partyMap} ncmp={done ? result.ncmp : undefined} width={240} />
     </div>
   )
 }

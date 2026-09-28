@@ -32,8 +32,13 @@ interface State {
   /** only user-edited contests are stored; the rest follow defaults */
   contestOverrides: Record<string, Contest>
   swings: Swings
+  /** party whose information card is open (null = closed) */
+  partyInfo: string | null
+  /** the page was opened from someone's share link */
+  fromShare: boolean
 
-  init: (d: AppData, shared?: SharedState | null) => void
+  init: (d: AppData, shared?: SharedState | null, fromLink?: boolean) => void
+  dismissShareNotice: () => void
   setTab: (t: Tab) => void
   setTool: (t: Tool) => void
   setLens: (l: Lens) => void
@@ -62,6 +67,7 @@ interface State {
   addParty: (p: Party) => void
   removeParty: (id: string) => void
 
+  showPartyInfo: (id: string | null) => void
   setSwings: (patch: Partial<Swings>) => void
   resetSwings: () => void
   importState: (s: SharedState) => void
@@ -89,12 +95,15 @@ export const useStore = create<State>((set, get) => ({
   parties: DEFAULT_PARTIES,
   contestOverrides: {},
   swings: DEFAULT_SWINGS,
+  partyInfo: null,
+  fromShare: false,
 
-  init: (d, shared) => {
+  dismissShareNotice: () => set({ fromShare: false }),
+  init: (d, shared, fromLink) => {
     const ctx = buildBlockContext(d.blocks, d.ge)
     const plan = ge2025Plan(d.blocks, d.ge, CONSTITUENCY_PALETTE)
     set({ data: d, ctx, plan, activeId: plan.constituencies[0]?.id ?? null })
-    if (shared) { get().importState(shared); set({ past: [] }) }
+    if (shared) { get().importState(shared); set({ past: [], fromShare: !!fromLink }) }
   },
   setTab: (tab) => set({ tab }),
   setTool: (tool) => set({ tool }),
@@ -185,6 +194,7 @@ export const useStore = create<State>((set, get) => ({
       contestOverrides: Object.fromEntries(Object.entries(s.contestOverrides).map(([k, c]) => [k, { ...c, parties: c.parties.filter((p) => p !== id) }])),
     })),
 
+  showPartyInfo: (partyInfo) => set({ partyInfo }),
   setSwings: (patch) => set((s) => ({ swings: { ...s.swings, ...patch } })),
   resetSwings: () => set({ swings: DEFAULT_SWINGS }),
   importState: (st) =>

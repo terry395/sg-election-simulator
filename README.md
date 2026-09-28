@@ -18,7 +18,12 @@ An interactive web app for political enthusiasts: redraw Singapore's electoral b
    - 2,000-run Monte Carlo in a Web Worker: majority and two-thirds probabilities, seat ranges and per-seat win probabilities
 4. **Election night**: polls close at 8pm, then sample counts arrive (±4%). Declarations follow through the night, smaller SMCs first and big GRCs last, with recounts in close seats. The map fills in live alongside the seat tally, majority call, gains, popular vote vs GE2025 and NCMP allocation.
 
-Maps, contests and swings autosave locally and can be shared as a link or exported/imported as JSON.
+- **Anchor leaders:** pick each party's team leader per seat from the real GE2025 candidates, or type any name. Well-known figures carry a suggested vote effect relative to the 2025 anchor.
+- **Live parliament chart** that fills seat by seat on election night (NCMP seats shown as rings), also shown in the forecast.
+- **🏛 Parties:** short, neutral beginner profiles of every party, from the top bar or any party badge.
+- Auto-draw names are always unique real place names, such as compass directions or URA neighbourhoods, never numbers.
+
+Maps, contests and swings autosave locally and can be shared as a link or exported/imported as JSON. Every shared link and export carries a disclaimer that it is an individual's scenario made for fun, not a poll or official projection, and people opening a shared link see the same notice.
 
 ## Run
 

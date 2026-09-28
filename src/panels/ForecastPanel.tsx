@@ -3,6 +3,7 @@ import { useStore } from '../state/store'
 import { useDerived } from '../state/derived'
 import { Button, PartyBadge, Section, Slider, fmt, pct } from '../components/ui'
 import { SeatBar } from '../components/SeatBar'
+import { Hemicycle } from '../components/Hemicycle'
 import { DEMO_GROUPS, DEFAULT_SWINGS } from '../model/swing'
 import type { McOutput } from '../model/montecarlo'
 import type { Swings } from '../types'
@@ -60,6 +61,9 @@ export function ForecastPanel() {
   return (
     <div>
       <Section title="Projected parliament">
+        <div className="mb-2 flex justify-center">
+          <Hemicycle seats={projection.seatsByParty} total={total} parties={partyMap} ncmp={projection.ncmp} width={260} />
+        </div>
         <SeatBar seats={projection.seatsByParty} total={total} parties={partyMap} />
         <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
           {Object.entries(projection.seatsByParty).sort((a, b) => b[1] - a[1]).map(([p, n]) => (
@@ -74,6 +78,7 @@ export function ForecastPanel() {
           <Button variant="primary" className="flex-1 py-2 text-sm" onClick={() => setTab('night')}>▶ Run election night</Button>
           <Button variant="subtle" onClick={runMc} disabled={running}>{running ? 'Simulating…' : '🎲 2,000 simulations'}</Button>
         </div>
+        <p className="mt-2 text-[10px] text-slate-500">⚠️ Simulated scenario for fun: not a poll or official projection.</p>
         {errors > 0 && <p className="mt-2 text-[11px] text-amber-300">Your map still has {errors} rule errors (see Draw). You can still simulate it.</p>}
         {mc && <McSummary mc={mc} />}
       </Section>

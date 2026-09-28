@@ -4,7 +4,8 @@ import { ebrcStructure, structureFor } from './structure'
 import { runOnce, type Partition, type Weights } from './partition'
 import type { DistrictSpec, Progress, RedistrictOptions, RedistrictResult } from './types'
 import { rng } from '../rng'
-import { distinctColors, electorsOf, ge2025Plan, suggestName, titleCase } from '../stats'
+import { distinctColors, electorsOf, ge2025Plan, titleCase } from '../stats'
+import { uniqueNames } from '../naming'
 import { CONSTITUENCY_PALETTE } from '../../data/parties'
 
 export * from './types'
@@ -149,30 +150,18 @@ function buildPlan(blocks: Block[], ge: GE2025Data, g: Graph, p: Partition, spec
   for (const b of blocks) geTotal[b.ed] = (geTotal[b.ed] || 0) + electorsOf(b, opts.year)
   const geName = new Map(ge.constituencies.map((c) => [c.id, c.name.replace(/ (GRC|SMC)$/i, '')]))
 
-  const used = new Set<string>()
-  const names = specs.map((s, d) => {
-    if (opts.method === 'ebrc' && opts.keepNames && s.name) return s.name
-    const from: Record<string, number> = {}
-    for (const i of members[d]) from[blocks[i].ed] = (from[blocks[i].ed] || 0) + g.w[i]
-    const top = Object.entries(from).sort((a, b) => b[1] - a[1])[0]
-    if (top && top[1] > 0.6 * geTotal[top[0]]) return geName.get(top[0]) ?? suggestName(members[d], blocks)
-    return suggestName(members[d], blocks)
-  })
-  // de-duplicate: keep the bigger seat's name, number the rest
-  const order = specs.map((_, d) => d).sort((a, b) => p.E[b] - p.E[a])
-  const finalNames: string[] = []
-  for (const d of order) {
-    let n = names[d] || `Constituency ${d + 1}`
-    if (used.has(n)) {
-      // fall back to the town-based name, then number it
-      const alt = suggestName(members[d], blocks)
-      n = alt
-      let k = 2
-      while (used.has(n)) n = `${alt} ${k++}`
-    }
-    used.add(n)
-    finalNames[d] = n
-  }
+  const finalNames = uniqueNames(
+    specs.map((s, d) => {
+      if (opts.method === 'ebrc' && opts.keepNames && s.name) return { members: members[d], preferred: s.name, locked: true }
+      const from: Record<string, number> = {}
+      for (const i of members[d]) from[blocks[i].ed] = (from[blocks[i].ed] || 0) + g.w[i]
+      const top = Object.entries(from).sort((a, b) => b[1] - a[1])[0]
+      // a seat that keeps most of a GE2025 constituency keeps its familiar name
+      const preferred = top && top[1] > 0.6 * geTotal[top[0]] ? geName.get(top[0]) : undefined
+      return { members: members[d], preferred }
+    }),
+    blocks,
+  )
 
   const ids = specs.map((s) => s.baseId ?? newId())
   const assign: (string | null)[] = Array.from(p.assign, (d) => (d >= 0 ? ids[d] : null))

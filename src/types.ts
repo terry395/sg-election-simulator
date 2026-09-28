@@ -81,6 +81,8 @@ export interface Contest {
   parties: string[]
   /** per-party candidate bonus in percentage points (anchor minister, star candidate...) */
   star: Record<string, number>
+  /** per-party anchor leader (team leader in a GRC, the candidate in an SMC) */
+  leaders?: Record<string, string>
 }
 
 export interface Swings {

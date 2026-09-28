@@ -12,6 +12,8 @@ export interface Derived {
   stats: PlanStats
   issues: Issue[]
   contests: Record<string, Contest>
+  /** contests before any user edits (used for leader-effect baselines) */
+  defaults: Record<string, Contest>
   partyMap: Record<string, Party>
   projection: ElectionResult
   districts: FeatureCollection<MultiPolygon, { id: string; color: string }>
@@ -71,8 +73,8 @@ export function DerivedProvider({ children }: { children: ReactNode }) {
   }, [plan.constituencies, membersOf, data, stats])
 
   const value = useMemo(
-    () => ({ stats, issues, contests, partyMap, projection, districts, labels, membersOf }),
-    [stats, issues, contests, partyMap, projection, districts, labels, membersOf],
+    () => ({ stats, issues, contests, defaults, partyMap, projection, districts, labels, membersOf }),
+    [stats, issues, contests, defaults, partyMap, projection, districts, labels, membersOf],
   )
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

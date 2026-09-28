@@ -7,12 +7,16 @@ import { MapView } from './map/MapView'
 import { DrawPanel } from './panels/DrawPanel'
 import { ContestPanel } from './panels/ContestPanel'
 import { ForecastPanel } from './panels/ForecastPanel'
-import { NightOverlay, NightPanel } from './panels/NightPanel'
+import { NightOverlay, NightPanel, NightParliament } from './panels/NightPanel'
 import { Button, fmt } from './components/ui'
+import { PartyDrawer } from './components/PartyDrawer'
 import { decodeState, encodeState, type SharedState } from './share/serialize'
 import { DEFAULT_PARTIES } from './data/parties'
 
 const STORAGE_KEY = 'sg-election-sim:v1'
+/** shown with everything that leaves the app: shares, exports, shared-link visits */
+const DISCLAIMER = 'Made by an individual for fun with the GE2030 Simulator. Not a poll, survey or official projection, and not affiliated with the Elections Department or any political party.'
+const shareText = (url: string) => `My GE2030 scenario on the SG Election Simulator, made by an individual for fun. Not a poll, survey or official projection.\n${url}`
 const GUIDE_SEEN_KEY = 'sg-election-sim:guide-seen'
 const GUIDE_URL = import.meta.env.BASE_URL + 'guide.html'
 
@@ -32,7 +36,7 @@ export default function App() {
             if (saved) shared = decodeState(saved, d.blocks.length)
           } catch { /* storage unavailable */ }
         }
-        init(d, shared)
+        init(d, shared, !!hash && !!shared)
         if (hash) history.replaceState(null, '', location.pathname + location.search)
       })
       .catch((e) => setError(String(e)))
@@ -90,7 +94,9 @@ function Shell() {
   return (
     <div className="flex h-full flex-col">
       <Header />
+      <SharedNotice />
       <WelcomeBanner />
+      <PartyDrawer />
       <nav className="flex shrink-0 gap-1 overflow-x-auto border-b border-slate-800 bg-slate-950 px-3">
         {TABS.map((t) => (
           <button key={t.id} onClick={() => setTab(t.id)}
@@ -103,6 +109,7 @@ function Shell() {
         <div className="relative h-[55vh] shrink-0 md:h-auto md:flex-1">
           <MapView />
           {tab === 'night' && <NightOverlay />}
+          {tab === 'night' && <NightParliament />}
           <MapLegend />
         </div>
         <aside key={tab} className="scroll-thin min-h-0 flex-1 overflow-y-auto border-l border-slate-800 bg-slate-950 md:w-[420px] md:flex-none">
@@ -186,15 +193,13 @@ function Header() {
   const importState = useStore((s) => s.importState)
   const [msg, setMsg] = useState<string | null>(null)
   const [about, setAbout] = useState(false)
+  const [sharing, setSharing] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(null), 2500) }
 
-  const share = async () => {
-    const url = `${location.origin}${location.pathname}#s=${encodeState(currentState())}`
-    try { await navigator.clipboard.writeText(url); flash('Link copied to clipboard') } catch { prompt('Copy this link', url) }
-  }
+  const share = () => setSharing(`${location.origin}${location.pathname}#s=${encodeState(currentState())}`)
   const exportJson = () => {
-    const blob = new Blob([JSON.stringify({ app: 'sg-election-simulator', version: 1, state: currentState() }, null, 1)], { type: 'application/json' })
+    const blob = new Blob([JSON.stringify({ app: 'sg-election-simulator', version: 1, disclaimer: DISCLAIMER, state: currentState() }, null, 1)], { type: 'application/json' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
     a.download = 'ge2030-map.json'
@@ -234,6 +239,7 @@ function Header() {
       </div>
       <div className="ml-auto flex items-center gap-1.5">
         {msg && <span className="text-xs text-emerald-300">{msg}</span>}
+        <Button onClick={() => useStore.getState().showPartyInfo('PAP')} title="Who are the parties? Beginner-friendly profiles">🏛 Parties</Button>
         <a href={GUIDE_URL} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 rounded-md border border-rose-500/70 bg-rose-600/15 px-2.5 py-1.5 text-xs font-medium text-rose-100 hover:bg-rose-600/30" title="Step-by-step beginner guide">📖 Guide</a>
         <Button onClick={share} title="Copy a link containing your map, contests and swings">🔗 Share link</Button>
         <Button onClick={exportJson}>⬇ Export</Button>
@@ -242,7 +248,55 @@ function Header() {
         <Button onClick={() => setAbout(true)}>ⓘ</Button>
       </div>
       {about && <About onClose={() => setAbout(false)} />}
+      {sharing && <ShareDialog url={sharing} onClose={() => setSharing(null)} onCopied={() => flash('Link copied with disclaimer')} />}
     </header>
+  )
+}
+
+/** Share dialog: every copied link carries the disclaimer. */
+function ShareDialog({ url, onClose, onCopied }: { url: string; onClose: () => void; onCopied: () => void }) {
+  const text = shareText(url)
+  const [failed, setFailed] = useState(false)
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text)
+      onCopied()
+      onClose()
+    } catch {
+      setFailed(true)
+    }
+  }
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div className="w-full max-w-lg rounded-xl border border-slate-700 bg-slate-900 p-5 text-sm" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Share your scenario">
+        <div className="mb-2 flex items-start justify-between"><h2 className="text-base font-bold">🔗 Share your scenario</h2><button onClick={onClose} className="text-slate-400">✕</button></div>
+        <div className="rounded-md border border-amber-600/60 bg-amber-950/40 p-2.5 text-xs leading-snug text-amber-100">
+          <b>Please share responsibly.</b> {DISCLAIMER} The link opens your map, contests and swings exactly as you set them.
+        </div>
+        <p className="mt-3 text-xs text-slate-400">This is what will be copied. The note travels with the link:</p>
+        <textarea readOnly value={text} rows={4} onFocus={(e) => e.currentTarget.select()}
+          className="mt-1 w-full resize-none rounded-md border border-slate-700 bg-slate-950 p-2 font-mono text-[11px] text-slate-200" aria-label="Link with disclaimer" />
+        {failed && <p className="mt-1 text-xs text-amber-300">Your browser blocked copying. Select the text above and copy it (Ctrl+C).</p>}
+        <div className="mt-3 flex justify-end gap-2">
+          <Button onClick={onClose}>Cancel</Button>
+          <Button variant="primary" onClick={copy}>Copy link with disclaimer</Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** Shown to anyone who opens a shared link. */
+function SharedNotice() {
+  const fromShare = useStore((s) => s.fromShare)
+  const dismiss = useStore((s) => s.dismissShareNotice)
+  if (!fromShare) return null
+  return (
+    <div className="flex shrink-0 items-start gap-3 border-b border-amber-700/60 bg-amber-950/70 px-4 py-2 text-sm text-amber-50" role="note">
+      <span>⚠️</span>
+      <span className="flex-1">You're viewing a <b>scenario someone made for fun</b> with this simulator. It is <b>not a poll, survey or official projection</b>, and is not affiliated with the Elections Department or any political party.</span>
+      <button onClick={dismiss} className="text-xs text-amber-200 hover:text-white">Got it ✕</button>
+    </div>
   )
 }
 

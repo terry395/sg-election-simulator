@@ -1,5 +1,6 @@
 import type { ReactNode, ButtonHTMLAttributes } from 'react'
 import { ink } from '../lib/color'
+import { useStore } from '../state/store'
 import type { Party } from '../types'
 
 export function Button({ className = '', variant = 'ghost', ...p }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'ghost' | 'primary' | 'danger' | 'subtle' }) {
@@ -24,13 +25,20 @@ export function Section({ title, right, children, className = '' }: { title: Rea
   )
 }
 
-export function PartyBadge({ party, active = true, onClick, small }: { party: Party; active?: boolean; onClick?: () => void; small?: boolean }) {
+/**
+ * Party badge. With no onClick it opens the party's information card
+ * (pass noInfo when the badge sits inside another button).
+ */
+export function PartyBadge({ party, active = true, onClick, small, noInfo }: { party: Party; active?: boolean; onClick?: () => void; small?: boolean; noInfo?: boolean }) {
+  const showPartyInfo = useStore((s) => s.showPartyInfo)
   const style = active ? { background: party.color, color: ink(party.color), borderColor: party.color } : { borderColor: party.color, color: party.color }
-  const cls = `inline-flex items-center rounded border font-bold ${small ? 'px-1 py-0 text-[10px]' : 'px-1.5 py-0.5 text-[11px]'} ${onClick ? 'cursor-pointer hover:brightness-110' : ''} ${active ? '' : 'bg-transparent opacity-60 hover:opacity-100'}`
-  return onClick ? (
-    <button type="button" className={cls} style={style} onClick={onClick} title={party.name}>{party.id}</button>
-  ) : (
-    <span className={cls} style={style} title={party.name}>{party.id}</span>
+  const clickable = !!onClick || !noInfo
+  const cls = `inline-flex items-center rounded border font-bold ${small ? 'px-1 py-0 text-[10px]' : 'px-1.5 py-0.5 text-[11px]'} ${clickable ? 'cursor-pointer hover:brightness-110' : ''} ${active ? '' : 'bg-transparent opacity-60 hover:opacity-100'}`
+  if (onClick) return <button type="button" className={cls} style={style} onClick={onClick} title={party.name}>{party.id}</button>
+  if (noInfo) return <span className={cls} style={style} title={party.name}>{party.id}</span>
+  return (
+    <button type="button" className={cls} style={style} title={`${party.name}: click for party info`}
+      onClick={(e) => { e.stopPropagation(); showPartyInfo(party.id) }}>{party.id}</button>
   )
 }
 

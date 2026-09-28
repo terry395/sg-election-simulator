@@ -173,8 +173,18 @@ await run(() => {
   const a = document.querySelector('aside')
   a.scrollTop = li.offsetTop - a.offsetTop - 60
 })
+// pick Pritam Singh as the WP anchor to show the leader effect
+await page.getByLabel('WP anchor leader').fill('Pritam Singh')
+await sleep(300)
+await run(() => {
+  const li = [...document.querySelectorAll('aside li')].find((l) => l.textContent.startsWith('East Coast'))
+  const a = document.querySelector('aside')
+  a.scrollTop = li.offsetTop - a.offsetTop - 60
+})
 await sleep(300)
 await shot('10-contest-detail')
+// undo it so the forecast and election-night numbers in the guide stay the same
+await run(() => window.__store.getState().resetContests())
 
 // 11 forecast with the "GE2020 mood" scenario
 await run(() => window.__store.getState().setTab('forecast'))
@@ -270,5 +280,11 @@ await page.waitForFunction(() => document.querySelector('aside').innerText.inclu
 await idle()
 await scrollPanelTo(null)
 await shot('20-autodraw-gerrymander')
+
+// 21 party information drawer
+await run(() => window.__store.getState().showPartyInfo('WP'))
+await sleep(400)
+await shot('21-parties')
+await run(() => window.__store.getState().showPartyInfo(null))
 
 await browser.close()

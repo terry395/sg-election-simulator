@@ -11,7 +11,7 @@ export function BlockTooltip({ id, x, y }: { id: number; x: number; y: number })
   const year = useStore((s) => s.year)
   const tab = useStore((s) => s.tab)
   const plan = useStore((s) => s.plan)
-  const { stats, projection, partyMap } = useDerived()
+  const { stats, projection, partyMap, contests } = useDerived()
   const revealed = useNight((s) => s.revealed)
   const nightResult = useNight((s) => s.result)
   const b = data.blocks[id]
@@ -37,7 +37,7 @@ export function BlockTooltip({ id, x, y }: { id: number; x: number; y: number })
           {Object.entries(seat.shares).sort((a, b) => b[1] - a[1]).map(([p, v]) => (
             <div key={p} className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-sm" style={{ background: partyMap[p]?.color }} />
-              <span className="flex-1">{p}</span>
+              <span className="flex-1 truncate">{p}{cid && contests[cid]?.leaders?.[p] ? <span className="text-slate-400"> · {contests[cid].leaders![p]}</span> : null}</span>
               <span className="tabular">{pct(v)}</span>
             </div>
           ))}
