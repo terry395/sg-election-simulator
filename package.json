@@ -1,0 +1,47 @@
+{
+  "name": "sg-election-simulator",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "fetch-data": "node pipeline/fetch.mjs",
+    "data": "node --max-old-space-size=8192 pipeline/build.mjs",
+    "test": "vitest run",
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@turf/boolean-point-in-polygon": "^7.4.0",
+    "@turf/helpers": "^7.4.0",
+    "lz-string": "^1.5.0",
+    "maplibre-gl": "^6.11.2",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "topojson-client": "^3.1.0",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@turf/turf": "^7.4.0",
+    "@types/d3-delaunay": "^6.0.4",
+    "@types/geojson": "^7946.0.16",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@types/topojson-client": "^3.1.5",
+    "@types/topojson-server": "^3.0.4",
+    "@types/topojson-simplify": "^3.0.3",
+    "@vitejs/plugin-react": "^6.1.1",
+    "d3-delaunay": "^6.0.4",
+    "oxlint": "^1.81.0",
+    "polyclip-ts": "^0.16.8",
+    "tailwindcss": "^4.3.3",
+    "topojson-server": "^3.0.1",
+    "topojson-simplify": "^3.0.3",
+    "typescript": "~6.0.2",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.2"
+  }
+}
