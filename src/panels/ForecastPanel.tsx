@@ -8,6 +8,8 @@ import { DEMO_GROUPS, DEFAULT_SWINGS } from '../model/swing'
 import type { McOutput } from '../model/montecarlo'
 import type { Swings } from '../types'
 import { PAP } from '../data/parties'
+import { Dices, Info, Play } from 'lucide-react'
+import { DISCLAIMER_SHORT } from '../data/disclaimer'
 
 const SCENARIOS: { label: string; hint: string; swings: Partial<Swings> }[] = [
   { label: 'GE2025 repeat', hint: 'No change from 2025', swings: {} },
@@ -75,10 +77,10 @@ export function ForecastPanel() {
           Popular vote: {nationalVote.slice(0, 5).map(([p, v]) => `${p} ${pct(v / projection.totalValid)}`).join(' · ')}
         </div>
         <div className="mt-3 flex gap-2">
-          <Button variant="primary" className="flex-1 py-2 text-sm" onClick={() => setTab('night')}>▶ Run election night</Button>
-          <Button variant="subtle" onClick={runMc} disabled={running}>{running ? 'Simulating…' : '🎲 2,000 simulations'}</Button>
+          <Button variant="primary" className="flex-1 py-2 text-sm" onClick={() => setTab('night')}><Play size={15} aria-hidden /> Run election night</Button>
+          <Button variant="subtle" onClick={runMc} disabled={running}>{running ? 'Simulating…' : <><Dices size={14} aria-hidden /> 2,000 simulations</>}</Button>
         </div>
-        <p className="mt-2 text-[10px] text-slate-500">⚠️ Simulated scenario for fun: not a poll or official projection.</p>
+        <p className="mt-2 flex items-start gap-1 text-[10px] text-slate-500"><Info size={12} className="mt-px shrink-0" aria-hidden />Simulated scenario. {DISCLAIMER_SHORT}</p>
         {errors > 0 && <p className="mt-2 text-[11px] text-amber-300">Your map still has {errors} rule errors (see Draw). You can still simulate it.</p>}
         {mc && <McSummary mc={mc} />}
       </Section>

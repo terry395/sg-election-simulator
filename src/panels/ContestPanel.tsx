@@ -6,6 +6,7 @@ import { PAP } from '../data/parties'
 import type { Contest } from '../types'
 import { candidatesByParty, leaderBonus, leaderRole } from '../data/candidates'
 import { defaultLeaders } from '../model/contests'
+import { X } from 'lucide-react'
 
 export function ContestPanel() {
   const plan = useStore((s) => s.plan)
@@ -98,7 +99,7 @@ export function ContestPanel() {
                             <input list={hasList ? `cands-${p}` : undefined} value={name} onChange={(e) => setLeader(p, e.target.value)}
                               placeholder={hasList ? 'Pick a GE2025 candidate or type a name' : 'Type your candidate’s name'}
                               className="min-w-0 flex-1 rounded border border-slate-700 bg-slate-950 px-1.5 py-0.5 text-xs" aria-label={`${p} anchor leader`} />
-                            {name && <button className="text-[10px] text-slate-500 hover:text-slate-300" onClick={() => setLeader(p, '')} title="Clear">✕</button>}
+                            {name && <button className="text-[10px] text-slate-500 hover:text-slate-300" onClick={() => setLeader(p, '')} title="Clear" aria-label="Clear"><X size={12} /></button>}
                           </div>
                           {role && <div className="mt-0.5 text-[10px] text-sky-300">{role}</div>}
                           <Slider label={<span className="text-slate-400">Leader effect vs 2025 <span className="text-slate-500">(auto-set from the leader; adjust freely)</span></span>}
@@ -138,7 +139,7 @@ function PartyEditor() {
         <div key={p.id} className="flex items-center gap-2">
           <PartyBadge party={p} small />
           <div className="flex-1"><Slider label={p.name} value={p.strength} min={0.05} max={1.5} step={0.05} unit="" colorize={false} onChange={(v) => update(p.id, { strength: v })} /></div>
-          {p.custom && <button className="text-xs text-red-400" onClick={() => remove(p.id)} title="Remove party">✕</button>}
+          {p.custom && <button className="text-xs text-red-400" onClick={() => remove(p.id)} title="Remove party" aria-label="Remove party"><X size={14} /></button>}
         </div>
       ))}
       <div className="mt-3 rounded-md border border-dashed border-slate-700 p-2">

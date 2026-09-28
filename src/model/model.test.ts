@@ -107,6 +107,25 @@ describe('simulation', () => {
     expect(ev.filter((e) => e.kind === 'result' || e.kind === 'walkover').length).toBe(plan.constituencies.length)
     expect(ev.at(-1)!.kind).toBe('ncmp')
   })
+  it('news flashes are occasional, ordered and reproducible', () => {
+    const res = runElection(plan.constituencies, stats.byId, contests, { ...DEFAULT_SWINGS, national: -8 }, parties)
+    const ctx = {
+      leaders: Object.fromEntries(Object.entries(contests).map(([id, c]) => [id, c.leaders])),
+      holders: Object.fromEntries(Object.entries(stats.byId).map(([id, s]) => [id, s.pap0 >= 0.5 ? 'PAP' : s.mainOpp])),
+      prevNational: Object.fromEntries(Object.entries(ge.parties).map(([p, v]) => [p, v.national])),
+    }
+    const ev = buildTimeline(plan.constituencies, res, 3, ctx)
+    expect(buildTimeline(plan.constituencies, res, 3, ctx)).toEqual(ev)
+    // counts are unchanged by the news desk
+    expect(ev.filter((e) => e.kind !== 'news')).toEqual(buildTimeline(plan.constituencies, res, 3))
+    for (let i = 1; i < ev.length; i++) expect(ev[i].t).toBeGreaterThanOrEqual(ev[i - 1].t)
+    expect(ev.at(-1)!.kind).toBe('ncmp')
+    const news = ev.filter((e) => e.kind === 'news')
+    expect(news.length).toBeGreaterThanOrEqual(5)
+    expect(news.length).toBeLessThanOrEqual(16)
+    expect(news.some((n) => n.headline.includes('PAP returned to government') || n.headline.includes('PAP secures a majority'))).toBe(true)
+    expect(news.at(-1)!.headline).toBe('All results declared')
+  })
 })
 
 describe('sharing', () => {

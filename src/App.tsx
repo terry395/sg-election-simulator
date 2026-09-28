@@ -8,15 +8,17 @@ import { DrawPanel } from './panels/DrawPanel'
 import { ContestPanel } from './panels/ContestPanel'
 import { ForecastPanel } from './panels/ForecastPanel'
 import { NightOverlay, NightPanel, NightParliament } from './panels/NightPanel'
-import { Button, fmt } from './components/ui'
+import { Button, Swatch, fmt } from './components/ui'
+import { AlertTriangle, ArrowRight, BookOpen, Download, Info, Landmark, Loader2, Share2, ShieldCheck, Upload, Vote, X } from 'lucide-react'
+import { DISCLAIMER_FULL, DISCLAIMER_SHORT } from './data/disclaimer'
 import { PartyDrawer } from './components/PartyDrawer'
 import { decodeState, encodeState, type SharedState } from './share/serialize'
 import { DEFAULT_PARTIES } from './data/parties'
 
 const STORAGE_KEY = 'sg-election-sim:v1'
 /** shown with everything that leaves the app: shares, exports, shared-link visits */
-const DISCLAIMER = 'Made by an individual for fun with the GE2030 Simulator. Not a poll, survey or official projection, and not affiliated with the Elections Department or any political party.'
-const shareText = (url: string) => `My GE2030 scenario on the SG Election Simulator, made by an individual for fun. Not a poll, survey or official projection.\n${url}`
+const DISCLAIMER = 'Made by an individual with the GE2030 Simulator, for entertainment and education. It does not represent any real-life polling, survey or official projection, and is not affiliated with the Elections Department or any political party.'
+const shareText = (url: string) => `My GE2030 scenario on the SG Election Simulator, made for entertainment and education. Not real-life polling, a survey or an official projection.\n${url}`
 const GUIDE_SEEN_KEY = 'sg-election-sim:guide-seen'
 const GUIDE_URL = import.meta.env.BASE_URL + 'guide.html'
 
@@ -45,7 +47,7 @@ export default function App() {
   if (error) return <div className="p-8 text-red-300">Failed to load data: {error}</div>
   if (!data) return (
     <div className="flex h-full items-center justify-center text-slate-400">
-      <div className="text-center"><div className="mb-2 animate-pulse text-3xl">🗳️</div>Loading electoral map…</div>
+      <div className="flex flex-col items-center gap-2 text-center"><Loader2 size={28} className="animate-spin text-rose-500" aria-hidden />Loading electoral map…</div>
     </div>
   )
   return (
@@ -119,6 +121,7 @@ function Shell() {
           {tab === 'night' && <NightPanel />}
         </aside>
       </main>
+      <Footer />
     </div>
   )
 }
@@ -134,8 +137,8 @@ function MapLegend() {
     <div className="pointer-events-none absolute bottom-6 left-3 z-10 rounded-md bg-slate-950/85 px-2.5 py-1.5 text-[11px] ring-1 ring-slate-700">
       <div className="mb-0.5 text-slate-400">{tab === 'contests' ? 'Main challenger' : tab === 'forecast' ? 'Projected winner (paler = closer)' : 'Declared winner (grey = counting)'}</div>
       <div className="flex flex-wrap gap-x-2">
-        {ids.map((p) => <span key={p}><span style={{ color: partyMap[p]?.color }}>■</span> {p}</span>)}
-        {tab === 'contests' && <span><span className="text-slate-400">■</span> walkover</span>}
+        {ids.map((p) => <span key={p}><Swatch color={partyMap[p]?.color} /> {p}</span>)}
+        {tab === 'contests' && <span><Swatch /> walkover</span>}
       </div>
     </div>
   )
@@ -179,10 +182,21 @@ function WelcomeBanner() {
   }
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-rose-900/60 bg-rose-950/60 px-4 py-2 text-sm">
-      <span>👋 New here? Read the <b>5-minute beginner guide</b>: it explains every button and every election term in plain English.</span>
-      <a href={GUIDE_URL} target="_blank" rel="noopener" onClick={dismiss} className="rounded-md bg-rose-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-rose-500">Open the guide →</a>
-      <button onClick={dismiss} className="ml-auto text-xs text-slate-400 hover:text-slate-200">Dismiss ✕</button>
+      <BookOpen size={16} className="shrink-0 text-rose-300" aria-hidden />
+      <span>New here? Read the <b>5-minute beginner guide</b>: it explains every button and every election term in plain English. <span className="text-slate-400">{DISCLAIMER_SHORT}</span></span>
+      <a href={GUIDE_URL} target="_blank" rel="noopener" onClick={dismiss} className="inline-flex items-center gap-1 rounded-md bg-rose-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-rose-500">Open the guide <ArrowRight size={13} aria-hidden /></a>
+      <button onClick={dismiss} className="ml-auto inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-200">Dismiss <X size={13} aria-hidden /></button>
     </div>
+  )
+}
+
+/** Persistent disclaimer strip at the bottom of the app. */
+function Footer() {
+  return (
+    <footer className="flex shrink-0 items-center gap-1.5 border-t border-slate-800 bg-slate-950 px-4 py-1 text-[10px] text-slate-500">
+      <ShieldCheck size={12} className="shrink-0" aria-hidden />
+      <span>{DISCLAIMER_SHORT} Not affiliated with the Elections Department or any political party.</span>
+    </footer>
   )
 }
 
@@ -220,7 +234,7 @@ function Header() {
   return (
     <header className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-slate-800 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 px-4 py-2">
       <div className="flex items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-rose-600 text-lg font-black">✓</div>
+        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-rose-600"><Vote size={18} className="text-white" aria-hidden /></div>
         <div>
           <div className="text-sm font-bold leading-tight">GE2030 Simulator</div>
           <div className="text-[11px] leading-tight text-slate-400">Singapore electoral boundaries & election night</div>
@@ -239,13 +253,13 @@ function Header() {
       </div>
       <div className="ml-auto flex items-center gap-1.5">
         {msg && <span className="text-xs text-emerald-300">{msg}</span>}
-        <Button onClick={() => useStore.getState().showPartyInfo('PAP')} title="Who are the parties? Beginner-friendly profiles">🏛 Parties</Button>
-        <a href={GUIDE_URL} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 rounded-md border border-rose-500/70 bg-rose-600/15 px-2.5 py-1.5 text-xs font-medium text-rose-100 hover:bg-rose-600/30" title="Step-by-step beginner guide">📖 Guide</a>
-        <Button onClick={share} title="Copy a link containing your map, contests and swings">🔗 Share link</Button>
-        <Button onClick={exportJson}>⬇ Export</Button>
-        <Button onClick={() => fileRef.current?.click()}>⬆ Import</Button>
+        <Button onClick={() => useStore.getState().showPartyInfo('PAP')} title="Who are the parties? Beginner-friendly profiles"><Landmark size={14} aria-hidden /> Parties</Button>
+        <a href={GUIDE_URL} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 rounded-md border border-rose-500/70 bg-rose-600/15 px-2.5 py-1.5 text-xs font-medium text-rose-100 hover:bg-rose-600/30" title="Step-by-step beginner guide"><BookOpen size={14} aria-hidden /> Guide</a>
+        <Button onClick={share} title="Copy a link containing your map, contests and swings"><Share2 size={14} aria-hidden /> Share link</Button>
+        <Button onClick={exportJson}><Download size={14} aria-hidden /> Export</Button>
+        <Button onClick={() => fileRef.current?.click()}><Upload size={14} aria-hidden /> Import</Button>
         <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) importJson(f); e.target.value = '' }} />
-        <Button onClick={() => setAbout(true)}>ⓘ</Button>
+        <Button onClick={() => setAbout(true)} title="About, sources and disclaimer" aria-label="About"><Info size={14} aria-hidden /></Button>
       </div>
       {about && <About onClose={() => setAbout(false)} />}
       {sharing && <ShareDialog url={sharing} onClose={() => setSharing(null)} onCopied={() => flash('Link copied with disclaimer')} />}
@@ -269,7 +283,7 @@ function ShareDialog({ url, onClose, onCopied }: { url: string; onClose: () => v
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div className="w-full max-w-lg rounded-xl border border-slate-700 bg-slate-900 p-5 text-sm" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Share your scenario">
-        <div className="mb-2 flex items-start justify-between"><h2 className="text-base font-bold">🔗 Share your scenario</h2><button onClick={onClose} className="text-slate-400">✕</button></div>
+        <div className="mb-2 flex items-start justify-between"><h2 className="flex items-center gap-2 text-base font-bold"><Share2 size={16} aria-hidden /> Share your scenario</h2><button onClick={onClose} className="text-slate-400 hover:text-white" aria-label="Close"><X size={18} /></button></div>
         <div className="rounded-md border border-amber-600/60 bg-amber-950/40 p-2.5 text-xs leading-snug text-amber-100">
           <b>Please share responsibly.</b> {DISCLAIMER} The link opens your map, contests and swings exactly as you set them.
         </div>
@@ -293,9 +307,9 @@ function SharedNotice() {
   if (!fromShare) return null
   return (
     <div className="flex shrink-0 items-start gap-3 border-b border-amber-700/60 bg-amber-950/70 px-4 py-2 text-sm text-amber-50" role="note">
-      <span>⚠️</span>
-      <span className="flex-1">You're viewing a <b>scenario someone made for fun</b> with this simulator. It is <b>not a poll, survey or official projection</b>, and is not affiliated with the Elections Department or any political party.</span>
-      <button onClick={dismiss} className="text-xs text-amber-200 hover:text-white">Got it ✕</button>
+      <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-300" aria-hidden />
+      <span className="flex-1">You're viewing a <b>scenario someone made for fun</b> with this simulator. It does <b>not represent any real-life polling, survey or official projection</b>, and is not affiliated with the Elections Department or any political party.</span>
+      <button onClick={dismiss} className="inline-flex items-center gap-1 text-xs text-amber-200 hover:text-white">Got it <X size={13} aria-hidden /></button>
     </div>
   )
 }
@@ -305,8 +319,12 @@ function About({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div className="scroll-thin max-h-[85vh] max-w-xl overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 p-5 text-sm leading-relaxed" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-2 flex items-start justify-between"><h2 className="text-lg font-bold">About this simulator</h2><button onClick={onClose} className="text-slate-400">✕</button></div>
-        <p className="text-slate-300">Redraw Singapore's electoral map, choose who contests where, set the swing and watch a simulated GE2030 election night. For entertainment and analysis only; it is not affiliated with ELD or any party.</p>
+        <div className="mb-2 flex items-start justify-between"><h2 className="text-lg font-bold">About this simulator</h2><button onClick={onClose} className="text-slate-400 hover:text-white" aria-label="Close"><X size={18} /></button></div>
+        <p className="text-slate-300">Redraw Singapore's electoral map, choose who contests where, set the swing and watch a simulated GE2030 election night.</p>
+        <div className="mt-3 rounded-md border border-amber-600/60 bg-amber-950/40 p-3 text-xs leading-snug text-amber-100">
+          <div className="mb-1 flex items-center gap-1.5 font-semibold"><ShieldCheck size={14} aria-hidden /> Disclaimer &amp; privacy</div>
+          {DISCLAIMER_FULL}
+        </div>
         <h3 className="mt-3 font-semibold">How the map is built</h3>
         <p className="text-slate-300">The island is divided into ~700 building blocks: URA Master Plan 2019 subzones cut by the GE2025 electoral boundaries, with dense estates split further into cells of about 5,000 electors, which is close to polling-district size. Electors are placed using Census 2020 subzone populations and URA residential plot ratios. They are then scaled so that every GE2025 constituency matches the official register exactly ({ge.totalElectors.toLocaleString()} electors, 97 seats). The 2030 projection adds growth where planned housing is not yet filled (e.g. Tengah).</p>
         <h3 className="mt-3 font-semibold">How votes are modelled</h3>

@@ -111,11 +111,15 @@
   .lightbox .frame { max-width: min(1440px, 100%); max-height: 100%; cursor: zoom-out; box-shadow: none; }
   .lightbox .frame img { max-height: calc(100vh - 32px); width: auto; }
 
+  .i { width: 1em; height: 1em; vertical-align: -0.14em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+  .logo .i { width: 18px; height: 18px; vertical-align: 0; }
+  .open-app, .next a { display: inline-flex; align-items: center; gap: 6px; }
+  .menu-btn { align-items: center; gap: 6px; }
   footer { color: var(--faint); font-size: 14px; border-top: 1px solid var(--line); margin-top: 60px; padding-top: 16px; }
 
   @media (max-width: 900px) {
     .layout { grid-template-columns: 1fr; gap: 0; }
-    .menu-btn { display: inline-block; }
+    .menu-btn { display: inline-flex; }
     nav.toc { display: none; position: fixed; top: 56px; left: 0; right: 0; max-height: 70vh; background: var(--panel); border-bottom: 1px solid var(--line);
       padding: 12px 16px; z-index: 15; box-shadow: 0 10px 30px rgb(0 0 0 / .3); }
     nav.toc.open { display: block; }
@@ -132,12 +136,12 @@
 <body>
 
 <header class="topbar">
-  <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="toc">☰ Contents</button>
+  <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="toc"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/></svg> Contents</button>
   <a class="brand" href="./">
-    <div class="logo">✓</div>
+    <div class="logo"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 12 2 2 4-4"/><path d="M5 7c0-1.1.9-2 2-2h10a2 2 0 0 1 2 2v12H5V7Z"/><path d="M22 19H2"/></svg></div>
     <div><b>GE2030 Simulator</b><span>Beginner guide</span></div>
   </a>
-  <a class="open-app" href="./">Open the simulator →</a>
+  <a class="open-app" href="./">Open the simulator <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
 </header>
 
 <div class="layout">
@@ -156,7 +160,7 @@
       <li class="sub"><a href="#step1-lasso">Using the lasso</a></li>
       <li class="sub"><a href="#step1-checks">Fixing problems</a></li>
       <li class="sub"><a href="#step1-lens">Map lenses</a></li>
-      <li class="sub"><a href="#step1-auto">✨ Auto-draw</a></li>
+      <li class="sub"><a href="#step1-auto">Auto-draw</a></li>
       <li><a href="#step2">Step 2 · Contests</a></li>
       <li class="sub"><a href="#leaders">Anchor leaders</a></li>
       <li><a href="#step3">Step 3 · Swings & forecast</a></li>
@@ -174,7 +178,8 @@
       <h1>How to use the GE2030 Simulator</h1>
       <p class="lead">This simulator lets you play "election designer" for Singapore. You redraw the voting map, decide which parties stand where, choose how people's votes change, and then watch a pretend election night unfold, seat by seat.</p>
       <p>You don't need to know anything about politics to use it. This guide explains every button and every election word in plain English, with pictures. It takes about 10 minutes to read, and you can jump to any part using the contents list.</p>
-      <div class="callout"><b>Just want to play?</b> Open the simulator, click the <span class="ui">4 Election night</span> tab and press <span class="ui">▶ Polls close — start the count</span>. You'll see the 2025 map play out as a live results night. Come back here when you want to understand what's going on.</div>
+      <div class="callout warn"><b><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg> Disclaimer</b>This simulator does not represent any real-life polling, survey or official projection. No user data is recorded: nothing you do is sent to a server, and your work is saved only in your own browser. It is intended purely for entertainment and educational purposes, and is not affiliated with the Elections Department or any political party.</div>
+      <div class="callout"><b>Just want to play?</b> Open the simulator, click the <span class="ui">4 Election night</span> tab and press <span class="ui"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/></svg> Polls close — start the count</span>. You'll see the 2025 map play out as a live results night. Come back here when you want to understand what's going on.</div>
     </section>
 
     <section id="quick-start">
@@ -242,7 +247,7 @@
           <tr><td><span class="badge" style="background:#78909c">IND</span></td><td>Independent</td><td>A candidate who doesn't belong to any party.</td></tr>
         </tbody>
       </table></div>
-      <p>Want to know more about a party? Click <span class="ui">🏛 Parties</span> in the top bar, or click any party badge anywhere in the simulator. A short, neutral profile opens, covering the party's history, leaders, the ideas it is associated with, its main themes and how it did in 2025.</p>
+      <p>Want to know more about a party? Click <span class="ui"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 18v-7"/><path d="M11.119 2.205a2 2 0 0 1 1.762 0l7.84 3.846A.5.5 0 0 1 20.5 7h-17a.5.5 0 0 1-.22-.949z"/><path d="M14 18v-7"/><path d="M18 18v-7"/><path d="M3 22h18"/><path d="M6 18v-7"/></svg> Parties</span> in the top bar, or click any party badge anywhere in the simulator. A short, neutral profile opens, covering the party's history, leaders, the ideas it is associated with, its main themes and how it did in 2025.</p>
       <figure class="shot">
         <div class="frame"><img src="/guide/21-parties.jpg" alt="The Parties drawer showing the Workers' Party profile" loading="lazy" />
           <span class="pin" style="left:70.8%;top:6%">1</span>
@@ -281,12 +286,12 @@
         <figcaption><span class="title">The main screen</span>
           <ol>
             <li><b>Electors switch.</b> Use the 2025 voter numbers, or a projection of how many voters there will be by 2030 as new estates fill up.</li>
-            <li><b>Parties, Guide, Share link, Export and Import.</b> <span class="ui">🏛 Parties</span> opens a profile of every party (see <a href="#parties">The parties</a>). The others open this guide, or save and share your work (see <a href="#share">Saving &amp; sharing</a>).</li>
+            <li><b>Parties, Guide, Share link, Export and Import.</b> <span class="ui"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 18v-7"/><path d="M11.119 2.205a2 2 0 0 1 1.762 0l7.84 3.846A.5.5 0 0 1 20.5 7h-17a.5.5 0 0 1-.22-.949z"/><path d="M14 18v-7"/><path d="M18 18v-7"/><path d="M3 22h18"/><path d="M6 18v-7"/></svg> Parties</span> opens a profile of every party (see <a href="#parties">The parties</a>). The others open this guide, or save and share your work (see <a href="#share">Saving &amp; sharing</a>).</li>
             <li><b>The four step tabs.</b> Click any tab to switch step. You can also press <kbd>1</kbd>–<kbd>4</kbd> on your keyboard.</li>
             <li><b>The map.</b> Each colour is one constituency, with thick black lines as boundaries. The thin white lines divide about 700 small "building blocks" that you can move between constituencies.</li>
             <li><b>Zoom.</b> Use these buttons or your mouse scroll wheel to zoom in and out.</li>
             <li><b>Side panel.</b> Shows the controls and numbers for the current step.</li>
-            <li><b>✨ Auto-draw.</b> Let the computer redraw the whole map for you (see <a href="#step1-auto">Auto-draw</a>).</li>
+            <li><b><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg> Auto-draw.</b> Let the computer redraw the whole map for you (see <a href="#step1-auto">Auto-draw</a>).</li>
           </ol>
         </figcaption>
       </figure>
@@ -299,7 +304,7 @@
       <h2 style="margin-top:4px;border:0">Draw boundaries</h2>
       <p>In this step you act as the EBRC. You decide which neighbourhoods are grouped together, how many constituencies there are, and whether each one is an SMC or a GRC. If you'd rather keep the real 2025 map, skip to <a href="#step2">Step 2</a>.</p>
       <p>The map starts as the <b>GE2025 boundaries</b>. To start from nothing, click <span class="ui">Blank map</span> at the top of the side panel. If you change your mind, <span class="ui">GE2025 boundaries</span> brings the real map back.</p>
-      <p>You can draw by hand with the tools below, or let the computer do it: <a href="#step1-auto">✨ Auto-draw</a> redraws the whole island in a few seconds using one of four methods.</p>
+      <p>You can draw by hand with the tools below, or let the computer do it: <a href="#step1-auto">Auto-draw</a> redraws the whole island in a few seconds using one of four methods.</p>
 
       <h3 id="step1-select">Look around: click a constituency</h3>
       <p>Hover your mouse over any area to see a small information card. Click it to <b>select</b> its constituency. The selected constituency gets a yellow outline and its details appear in the side panel.</p>
@@ -331,14 +336,14 @@
       <h3 id="step1-tools">The drawing tools</h3>
       <p>The <b>Tools</b> box in the side panel has six tools. Click one to choose it, or press its keyboard key.</p>
       <div class="tools">
-        <div><b>➚ Select <kbd>V</kbd></b>Click an area to select its constituency. You can't change anything with this tool, so it's safe for exploring.</div>
-        <div><b>🖌 Paint <kbd>B</kbd></b>Click or drag over areas to move them into the <i>selected</i> constituency.</div>
-        <div><b>🪣 Fill <kbd>G</kbd></b>Click once to move a whole connected group of same-coloured areas into the selected constituency. Handy for merging two constituencies.</div>
-        <div><b>➰ Lasso <kbd>L</kbd></b>Hold the mouse button and draw a loop. Every area inside the loop joins the selected constituency.</div>
-        <div><b>⌫ Erase <kbd>E</kbd></b>Click or drag to take areas out of their constituency, leaving them unassigned.</div>
-        <div><b>✋ Pan <kbd>H</kbd></b>Drag to move the map around. With any other tool, hold <kbd>Space</kbd> and drag to move the map.</div>
+        <div><b><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z"/></svg> Select <kbd>V</kbd></b>Click an area to select its constituency. You can't change anything with this tool, so it's safe for exploring.</div>
+        <div><b><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m14.622 17.897-10.68-2.913"/><path d="M18.376 2.622a1 1 0 1 1 3.002 3.002L17.36 9.643a.5.5 0 0 0 0 .707l.944.944a2.41 2.41 0 0 1 0 3.408l-.944.944a.5.5 0 0 1-.707 0L8.354 7.348a.5.5 0 0 1 0-.707l.944-.944a2.41 2.41 0 0 1 3.408 0l.944.944a.5.5 0 0 0 .707 0z"/><path d="M9 8c-1.804 2.71-3.97 3.46-6.583 3.948a.507.507 0 0 0-.302.819l7.32 8.883a1 1 0 0 0 1.185.204C12.735 20.405 16 16.792 16 15"/></svg> Paint <kbd>B</kbd></b>Click or drag over areas to move them into the <i>selected</i> constituency.</div>
+        <div><b><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 7 6 2"/><path d="M18.992 12H2.041"/><path d="M21.145 18.38A3.34 3.34 0 0 1 20 16.5a3.3 3.3 0 0 1-1.145 1.88c-.575.46-.855 1.02-.855 1.595A2 2 0 0 0 20 22a2 2 0 0 0 2-2.025c0-.58-.285-1.13-.855-1.595"/><path d="m8.5 4.5 2.148-2.148a1.205 1.205 0 0 1 1.704 0l7.296 7.296a1.205 1.205 0 0 1 0 1.704l-7.592 7.592a3.615 3.615 0 0 1-5.112 0l-3.888-3.888a3.615 3.615 0 0 1 0-5.112L5.67 7.33"/></svg> Fill <kbd>G</kbd></b>Click once to move a whole connected group of same-coloured areas into the selected constituency. Handy for merging two constituencies.</div>
+        <div><b><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.704 14.467a10 8 0 1 1 3.115 2.375"/><path d="M7 22a5 5 0 0 1-2-3.994"/><circle cx="5" cy="16" r="2"/></svg> Lasso <kbd>L</kbd></b>Hold the mouse button and draw a loop. Every area inside the loop joins the selected constituency.</div>
+        <div><b><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 21H8a2 2 0 0 1-1.42-.587l-3.994-3.999a2 2 0 0 1 0-2.828l10-10a2 2 0 0 1 2.829 0l5.999 6a2 2 0 0 1 0 2.828L12.834 21"/><path d="m5.082 11.09 8.828 8.828"/></svg> Erase <kbd>E</kbd></b>Click or drag to take areas out of their constituency, leaving them unassigned.</div>
+        <div><b><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg> Pan <kbd>H</kbd></b>Drag to move the map around. With any other tool, hold <kbd>Space</kbd> and drag to move the map.</div>
       </div>
-      <div class="callout"><b>Made a mistake?</b>Press the <span class="ui">↶</span> undo button (or <kbd>Ctrl</kbd>+<kbd>Z</kbd>) as many times as you like. <span class="ui">↷</span> (<kbd>Ctrl</kbd>+<kbd>Y</kbd>) redoes.</div>
+      <div class="callout"><b>Made a mistake?</b>Press the <span class="ui"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg></span> undo button (or <kbd>Ctrl</kbd>+<kbd>Z</kbd>) as many times as you like. <span class="ui"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13"/></svg></span> (<kbd>Ctrl</kbd>+<kbd>Y</kbd>) redoes.</div>
 
       <h3 id="step1-example">Worked example: create a new SMC</h3>
       <p>Say you think western Sengkang should be its own single-MP constituency. Here's how:</p>
@@ -423,7 +428,7 @@
       </figure>
 
       <h3 id="step1-checks">Fixing problems: the Checks box</h3>
-      <p>The <b>Checks</b> box makes sure your map follows the rules. <b style="color:#ef4444">✖ Errors</b> break a rule. <b style="color:#d97706">▲ Warnings</b> are allowed but worth a look. Click any message to jump to the constituency it's about.</p>
+      <p>The <b>Checks</b> box makes sure your map follows the rules. <b style="color:#ef4444"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg> Errors</b> break a rule. <b style="color:#d97706"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> Warnings</b> are allowed but worth a look. Click any message to jump to the constituency it's about.</p>
       <figure class="shot">
         <div class="frame"><img src="/guide/07-checks.jpg" alt="The Checks box listing errors after some areas were erased" loading="lazy" />
           <span class="pin" style="left:90.6%;top:12.6%">1</span>
@@ -469,8 +474,8 @@
         </figcaption>
       </figure>
       <div class="callout"><b>2025 or 2030 voters?</b>The <span class="ui">2025 register</span> / <span class="ui">2030 projection</span> switch at the top changes the voter numbers everywhere. The 2030 projection adds about 115,000 extra voters, mostly in estates still filling up, such as Tengah. A seat that is a fair size today may be too big by 2030.</div>
-      <h3 id="step1-auto">✨ Auto-draw: let the computer draw the map</h3>
-      <p>Drawing about 30 constituencies by hand takes time. <b>Auto-draw</b> does it for you. Click <span class="ui">✨ Auto-draw the whole map</span> under <i>Start from</i>, pick a method, adjust a few settings, and press <span class="ui">✨ Draw the map</span>. A few seconds later you have a complete new map that follows the rules. You can then fine-tune it by hand, or press Undo.</p>
+      <h3 id="step1-auto">Auto-draw: let the computer draw the map</h3>
+      <p>Drawing about 30 constituencies by hand takes time. <b>Auto-draw</b> does it for you. Click <span class="ui"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg> Auto-draw the whole map</span> under <i>Start from</i>, pick a method, adjust a few settings, and press <span class="ui"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg> Draw the map</span>. A few seconds later you have a complete new map that follows the rules. You can then fine-tune it by hand, or press Undo.</p>
       <figure class="shot">
         <div class="frame"><img src="/guide/18-autodraw-picker.jpg" alt="The Auto-draw panel with four methods and their settings" loading="lazy" />
           <span class="pin" style="left:71.5%;top:28.7%">1</span>
@@ -483,7 +488,7 @@
           <ol>
             <li><b>Choose a method</b> (explained below).</li>
             <li><b>Settings for that method</b>, such as how many seats and SMCs.</li>
-            <li><b>Fairness limit:</b> how far any seat's voters per MP may be from the national average. <b>Variation:</b> each number gives a different map with the same settings; 🎲 picks one at random.</li>
+            <li><b>Fairness limit:</b> how far any seat's voters per MP may be from the national average. <b>Variation:</b> each number gives a different map with the same settings; <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect width="12" height="12" x="2" y="10" rx="2" ry="2"/><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"/><path d="M6 18h.01"/><path d="M10 14h.01"/><path d="M15 6h.01"/><path d="M18 9h.01"/></svg> picks one at random.</li>
             <li><b>Draw the map.</b> It replaces your current map, and Undo brings the old one back.</li>
             <li><b>Manual tools</b> takes you back to painting by hand.</li>
           </ol>
@@ -491,10 +496,10 @@
       </figure>
       <h3>The four methods</h3>
       <dl class="terms">
-        <div><dt>🏛️ EBRC-style (realistic)</dt><dd>Works like the real Electoral Boundaries Review Committee. It keeps the existing constituencies and makes <b>small changes</b>, moving a few neighbourhoods between neighbours to fix seats that have too many or too few voters. It can also add seats or SMCs as the population grows. <i>Best for: "What will the actual GE2030 map probably look like?" Try it with the 2030 projection switched on.</i></dd></div>
-        <div><dt>📐 Fair &amp; compact</dt><dd>Throws away the old lines and draws a <b>brand-new map</b> from scratch. Every seat has nearly the same number of voters per MP, shapes are neat and round, and towns are split as little as possible. <i>Best for: "What would a neutral, tidy map look like?"</i></dd></div>
-        <div><dt>🧩 Custom mix</dt><dd>You decide the exact line-up: how many SMCs, and how many GRCs of 3, 4, 5 or 6 MPs. The <span class="ui">All SMCs (97)</span> button gives every voter their own single MP, with no GRCs at all. <i>Best for: "What if Singapore scrapped GRCs?"</i></dd></div>
-        <div><dt>🎭 Gerrymander (for learning)</dt><dd>Draws lines on purpose to help one side, using how each neighbourhood voted in 2025. You can favour the PAP, favour the opposition, or create as many close 50-50 seats as possible. Every map it draws still obeys the ±30% rule. <i>Best for: understanding why who draws the lines matters.</i></dd></div>
+        <div><dt><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 18v-7"/><path d="M11.119 2.205a2 2 0 0 1 1.762 0l7.84 3.846A.5.5 0 0 1 20.5 7h-17a.5.5 0 0 1-.22-.949z"/><path d="M14 18v-7"/><path d="M18 18v-7"/><path d="M3 22h18"/><path d="M6 18v-7"/></svg> EBRC-style (realistic)</dt><dd>Works like the real Electoral Boundaries Review Committee. It keeps the existing constituencies and makes <b>small changes</b>, moving a few neighbourhoods between neighbours to fix seats that have too many or too few voters. It can also add seats or SMCs as the population grows. <i>Best for: "What will the actual GE2030 map probably look like?" Try it with the 2030 projection switched on.</i></dd></div>
+        <div><dt><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></svg> Fair &amp; compact</dt><dd>Throws away the old lines and draws a <b>brand-new map</b> from scratch. Every seat has nearly the same number of voters per MP, shapes are neat and round, and towns are split as little as possible. <i>Best for: "What would a neutral, tidy map look like?"</i></dd></div>
+        <div><dt><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0z"/></svg> Custom mix</dt><dd>You decide the exact line-up: how many SMCs, and how many GRCs of 3, 4, 5 or 6 MPs. The <span class="ui">All SMCs (97)</span> button gives every voter their own single MP, with no GRCs at all. <i>Best for: "What if Singapore scrapped GRCs?"</i></dd></div>
+        <div><dt><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18"/><path d="m19 8 3 8a5 5 0 0 1-6 0zV7"/><path d="M3 7h1a17 17 0 0 0 8-2 17 17 0 0 0 8 2h1"/><path d="m5 8 3 8a5 5 0 0 1-6 0zV7"/><path d="M7 21h10"/></svg> Gerrymander (for learning)</dt><dd>Draws lines on purpose to help one side, using how each neighbourhood voted in 2025. You can favour the PAP, favour the opposition, or create as many close 50-50 seats as possible. Every map it draws still obeys the ±30% rule. <i>Best for: understanding why who draws the lines matters.</i></dd></div>
       </dl>
       <figure class="shot">
         <div class="frame"><img src="/guide/19-autodraw-result.jpg" alt="A fair and compact map drawn automatically, with a summary card" loading="lazy" />
@@ -540,10 +545,10 @@
       </figure>
       <div class="callout"><b>Tips</b><ul style="margin:4px 0 0;padding-left:20px">
         <li>Switch the electors to <span class="ui">2030 projection</span> before an <b>EBRC-style</b> redraw. It suggests adding seats (about 101) because of population growth, then rebalances the map.</li>
-        <li>Don't like the result? Press <span class="ui">🎲 Try another variation</span>. Each variation is a different, equally valid map.</li>
+        <li>Don't like the result? Press <span class="ui"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect width="12" height="12" x="2" y="10" rx="2" ry="2"/><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"/><path d="M6 18h.01"/><path d="M10 14h.01"/><path d="M15 6h.01"/><path d="M18 9h.01"/></svg> Try another variation</span>. Each variation is a different, equally valid map.</li>
         <li>Auto-draw follows neighbourhood lines, so you can still adjust any seat afterwards with the Paint tool.</li>
       </ul></div>
-      <div class="next"><a href="#tour">← Tour</a><a href="#step2">Next: Contests →</a></div>
+      <div class="next"><a href="#tour"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg> Tour</a><a href="#step2">Next: Contests <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a></div>
     </section>
 
     <!-- ============================================================ STEP 2 -->
@@ -603,7 +608,7 @@
       <p>Leaders appear throughout the night: "WP team led by … GAIN from PAP", in the results list, and when you hover over the map.</p>
       <h3>Party strength and new parties</h3>
       <p>At the bottom of the Contests panel, the <b>Party strength</b> sliders say how strong each opposition party is. It is set from how well each party did in 2025, with WP at 1.0. A stronger party gets more votes when it stands somewhere new, and takes more of the opposition vote in multi-party fights. You can also <b>add your own party</b>: give it a short code (like "NEW"), a name and a colour, then add it to seats like any other party.</p>
-      <div class="next"><a href="#step1">← Draw boundaries</a><a href="#step3">Next: Swings & forecast →</a></div>
+      <div class="next"><a href="#step1"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg> Draw boundaries</a><a href="#step3">Next: Swings & forecast <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a></div>
     </section>
 
     <!-- ============================================================ STEP 3 -->
@@ -666,7 +671,7 @@
       <p>Below the sliders, the <b>Seats, closest first</b> table lists every constituency, starting with the most marginal. Seats won by less than 5 points are highlighted. These are the ones to watch on election night.</p>
 
       <h3 id="step3-sims">2,000 simulations: how sure is the forecast?</h3>
-      <p>Real elections have surprises: polls are off and individual seats behave unexpectedly. Click <span class="ui">🎲 2,000 simulations</span> and the simulator reruns your election 2,000 times, each with random surprises. Then it tells you how often each result happened.</p>
+      <p>Real elections have surprises: polls are off and individual seats behave unexpectedly. Click <span class="ui"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect width="12" height="12" x="2" y="10" rx="2" ry="2"/><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"/><path d="M6 18h.01"/><path d="M10 14h.01"/><path d="M15 6h.01"/><path d="M18 9h.01"/></svg> 2,000 simulations</span> and the simulator reruns your election 2,000 times, each with random surprises. Then it tells you how often each result happened.</p>
       <figure class="shot">
         <div class="frame"><img src="/guide/12-simulations.jpg" alt="Simulation results: probability the PAP keeps its majority and a histogram of PAP seats" loading="lazy" />
           <span class="pin" style="left:71.5%;top:38.6%">1</span>
@@ -682,7 +687,7 @@
         </figcaption>
       </figure>
       <p>The size of the surprises is set in the <b>Uncertainty</b> box near the bottom. <i>National polling error</i> is how far off your whole prediction could be. <i>Seat-level noise</i> is how much individual seats can surprise. After running the simulations, a <b>Prob</b> column appears in the table showing each seat's chance of going to the projected winner.</p>
-      <div class="next"><a href="#step2">← Contests</a><a href="#step4">Next: Election night →</a></div>
+      <div class="next"><a href="#step2"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg> Contests</a><a href="#step4">Next: Election night <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a></div>
     </section>
 
     <!-- ============================================================ STEP 4 -->
@@ -742,7 +747,7 @@
       </figure>
       <figure class="shot">
         <div class="frame"><img src="/guide/16-night-result.jpg" alt="The final result: PAP forms the government with 76 of 98 seats" loading="lazy" />
-          <span class="pin" style="left:21.9%;top:17.6%">1</span>
+          <span class="pin" style="left:35.4%;top:23.6%">1</span>
           <span class="pin" style="left:71.5%;top:17.8%">2</span>
           <span class="pin" style="left:71.5%;top:25.6%">3</span>
           <span class="pin" style="left:71.5%;top:69.5%">4</span>
@@ -751,11 +756,11 @@
         </div>
         <figcaption><span class="title">The final result</span>
           <ol>
-            <li><b>The call:</b> "PAP wins a majority".</li>
+            <li><b>The call:</b> "PAP wins a majority". Just above it, the latest news flash from the night.</li>
             <li><b>Verdict:</b> who forms the government and whether they kept two-thirds.</li>
             <li><b>Results table:</b> seats and national vote share for every party. <b>vs 2025</b> shows the change from the real 2025 result (green = up, red = down). If any NCMP seats are offered, they appear as "+2N" and in a list below.</li>
             <li><b>Changing hands:</b> every seat won by a different party than in 2025, with the winning team's leader. The amber note above it is a reminder that this is a simulation you made, not a poll.</li>
-            <li><b>Announcements:</b> scroll down to see every result from the night.</li>
+            <li><b>Announcements:</b> scroll down to see every result from the night. Occasional <b>news flashes</b> (Breaking, Projection, Analysis) are mixed in: the first result, seats changing hands, photo finishes, the moment a party wins a majority, and a final round-up. The latest flash also appears briefly across the top of the map.</li>
             <li><b>The finished parliament.</b> If any NCMP seats are offered, they appear as coloured rings underneath the chart.</li>
           </ol>
         </figcaption>
@@ -778,8 +783,8 @@
           </ol>
         </figcaption>
       </figure>
-      <div class="callout"><b>Hover for details</b>Move your mouse over any declared constituency to see its full result. Press <span class="ui">↻ New election night</span> at the bottom of the panel to replay with a fresh set of surprises.</div>
-      <div class="next"><a href="#step3">← Swings & forecast</a><a href="#share">Next: Saving & sharing →</a></div>
+      <div class="callout"><b>Hover for details</b>Move your mouse over any declared constituency to see its full result. Press <span class="ui"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> New election night</span> at the bottom of the panel to replay with a fresh set of surprises.</div>
+      <div class="next"><a href="#step3"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg> Swings & forecast</a><a href="#share">Next: Saving & sharing <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a></div>
     </section>
 
     <!-- ============================================================ SHARE -->
@@ -787,9 +792,9 @@
       <h2>Saving & sharing your prediction</h2>
       <ul>
         <li><b>Autosave:</b> your map, contests and swings are saved automatically in your browser. Close the tab and they'll still be there next time, on the same computer and browser.</li>
-        <li><b>🔗 Share link:</b> opens a share box. It copies a web link containing your whole prediction, together with a short note saying it was <b>made by an individual for fun and is not a poll, survey or official projection</b>. The note is always included. Anyone who opens the link sees exactly your map, line-ups and swings, with a reminder banner at the top.</li>
-        <li><b>⬇ Export:</b> downloads your prediction as a small file (<code>ge2030-map.json</code>). Keep it as a backup, or to try different versions.</li>
-        <li><b>⬆ Import:</b> loads an exported file back in.</li>
+        <li><b><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg> Share link:</b> opens a share box. It copies a web link containing your whole prediction, together with a short note saying it was <b>made for entertainment and education, and is not real-life polling, a survey or an official projection</b>. The note is always included. Anyone who opens the link sees exactly your map, line-ups and swings, with a reminder banner at the top.</li>
+        <li><b><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg> Export:</b> downloads your prediction as a small file (<code>ge2030-map.json</code>). Keep it as a backup, or to try different versions.</li>
+        <li><b><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg> Import:</b> loads an exported file back in.</li>
       </ul>
       <div class="callout"><b>Please share responsibly</b>Results from this simulator are what-if scenarios based on the settings you choose. They are not polls or forecasts by any organisation. When you post a screenshot, please say it's a simulation you made.</div>
       <div class="callout warn"><b>Starting over</b>Clicking <span class="ui">GE2025 boundaries</span> or <span class="ui">Blank map</span> replaces your current map. You can undo it, but export first if you want a permanent copy.</div>
@@ -810,10 +815,11 @@
       <details><summary>My mouse drags the map instead of painting (or the other way round)</summary><p>With Paint, Erase or Lasso selected, dragging draws. To move the map instead, hold <kbd>Space</kbd> while dragging, switch to the Pan tool (<kbd>H</kbd>), or use the scroll wheel to zoom.</p></details>
       <details><summary>Does it work on a phone?</summary><p>Yes. The map sits on top and the controls below. Drawing boundaries is easier with a mouse on a bigger screen, but forecasting and election night work well on phones.</p></details>
       <details><summary>Keyboard shortcuts</summary><p><kbd>1</kbd>–<kbd>4</kbd> switch tabs. <kbd>V</kbd> Select, <kbd>B</kbd> Paint, <kbd>G</kbd> Fill, <kbd>L</kbd> Lasso, <kbd>E</kbd> Erase, <kbd>H</kbd> Pan. <kbd>Space</kbd> (hold) pans the map. <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes and <kbd>Ctrl</kbd>+<kbd>Y</kbd> redoes.</p></details>
-      <p style="margin-top:28px"><a class="open-app" href="./" style="display:inline-block">Open the simulator and try it →</a></p>
+      <p style="margin-top:28px"><a class="open-app" href="./" style="display:inline-flex">Open the simulator and try it <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a></p>
     </section>
 
     <footer>
+      <p><b>Disclaimer.</b> This simulator does not represent any real-life polling, survey or official projection. No user data is recorded: nothing you do is sent to a server, and your work is saved only in your own browser. It is intended purely for entertainment and educational purposes, and is not affiliated with the Elections Department or any political party.</p>
       GE2030 Simulator: an unofficial fan project for exploring Singapore's electoral system. Data: Elections Department, URA and SingStat via data.gov.sg (Singapore Open Data Licence). Map © OpenFreeMap, © OpenStreetMap contributors.
     </footer>
   </main>

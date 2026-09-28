@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useStore, type Lens, type Tool } from '../state/store'
 import { useDerived } from '../state/derived'
-import { Button, Section, ShareBar, Stat, fmt, pct } from '../components/ui'
+import { Button, Section, ShareBar, Stat, Swatch, fmt, pct } from '../components/ui'
+import { AlertTriangle, CheckCircle2, Eraser, Hand, Lasso, MousePointer2, PaintBucket, Paintbrush, Redo2, Trash2, Undo2, Wand2, XCircle, type LucideIcon } from 'lucide-react'
 import { DEMO_GROUPS } from '../model/swing'
 import { LENS_INFO } from '../map/useBlockColors'
 import { fmtDev } from '../model/validation'
@@ -9,13 +10,13 @@ import { suggestName } from '../model/stats'
 import { AutoDrawPanel } from './AutoDrawPanel'
 import { PAP } from '../data/parties'
 
-const TOOLS: { id: Tool; label: string; key: string; icon: string; hint: string }[] = [
-  { id: 'inspect', label: 'Select', key: 'V', icon: '➚', hint: 'Click an area to select its constituency' },
-  { id: 'paint', label: 'Paint', key: 'B', icon: '🖌', hint: 'Click or drag over areas to add them to the active constituency' },
-  { id: 'fill', label: 'Fill', key: 'G', icon: '🪣', hint: 'Click an area: it and every connected area of the same constituency join the active one' },
-  { id: 'lasso', label: 'Lasso', key: 'L', icon: '➰', hint: 'Drag a freehand loop; every area inside joins the active constituency' },
-  { id: 'erase', label: 'Erase', key: 'E', icon: '⌫', hint: 'Click or drag to remove areas from their constituency' },
-  { id: 'pan', label: 'Pan', key: 'H', icon: '✋', hint: 'Drag to move the map (or hold Space with any tool)' },
+const TOOLS: { id: Tool; label: string; key: string; icon: LucideIcon; hint: string }[] = [
+  { id: 'inspect', label: 'Select', key: 'V', icon: MousePointer2, hint: 'Click an area to select its constituency' },
+  { id: 'paint', label: 'Paint', key: 'B', icon: Paintbrush, hint: 'Click or drag over areas to add them to the active constituency' },
+  { id: 'fill', label: 'Fill', key: 'G', icon: PaintBucket, hint: 'Click an area: it and every connected area of the same constituency join the active one' },
+  { id: 'lasso', label: 'Lasso', key: 'L', icon: Lasso, hint: 'Drag a freehand loop; every area inside joins the active constituency' },
+  { id: 'erase', label: 'Erase', key: 'E', icon: Eraser, hint: 'Click or drag to remove areas from their constituency' },
+  { id: 'pan', label: 'Pan', key: 'H', icon: Hand, hint: 'Drag to move the map (or hold Space with any tool)' },
 ]
 
 const LENSES: { id: Lens; label: string }[] = [
@@ -63,7 +64,7 @@ export function DrawPanel() {
               <Button className="flex-1" onClick={() => setConfirm('blank')}>Blank map</Button>
             </div>
             <button onClick={() => setAuto(true)} className="mt-2 flex w-full items-center gap-2 rounded-md border border-violet-500/60 bg-gradient-to-r from-violet-600/25 to-rose-600/20 px-3 py-2 text-left hover:from-violet-600/40">
-              <span className="text-lg">✨</span>
+              <Wand2 size={18} className="shrink-0 text-violet-300" aria-hidden />
               <span><span className="block text-sm font-semibold">Auto-draw the whole map</span><span className="block text-[11px] text-slate-300">EBRC-style, fair & compact, custom mix or gerrymander</span></span>
             </button>
           </>
@@ -72,15 +73,15 @@ export function DrawPanel() {
 
       <Section title="Tools" right={
         <div className="flex gap-1">
-          <Button onClick={undo} disabled={!canUndo} title="Undo (Ctrl+Z)">↶</Button>
-          <Button onClick={redo} disabled={!canRedo} title="Redo (Ctrl+Y)">↷</Button>
+          <Button onClick={undo} disabled={!canUndo} title="Undo (Ctrl+Z)" aria-label="Undo"><Undo2 size={14} /></Button>
+          <Button onClick={redo} disabled={!canRedo} title="Redo (Ctrl+Y)" aria-label="Redo"><Redo2 size={14} /></Button>
         </div>
       }>
         <div className="grid grid-cols-6 gap-1">
           {TOOLS.map((t) => (
             <button key={t.id} title={`${t.hint} (${t.key})`} onClick={() => setTool(t.id)}
               className={`flex flex-col items-center rounded-md border py-1.5 text-[10px] ${tool === t.id ? 'border-rose-500 bg-rose-600/20 text-white' : 'border-slate-700 text-slate-300 hover:bg-slate-800'}`}>
-              <span className="text-base leading-none">{t.icon}</span>{t.label}
+              <t.icon size={16} className="mb-0.5" aria-hidden />{t.label}
             </button>
           ))}
         </div>
@@ -131,12 +132,12 @@ function Issues() {
       </span>
     }>
       {infos.map((i, k) => <div key={k} className="text-[11px] text-slate-400">{i.message}</div>)}
-      {list.length === 0 && <div className="mt-1 text-xs text-emerald-400">✓ This map satisfies all the rules</div>}
+      {list.length === 0 && <div className="mt-1 flex items-center gap-1.5 text-xs text-emerald-400"><CheckCircle2 size={14} aria-hidden /> This map satisfies all the rules</div>}
       <ul className="mt-1 space-y-0.5">
         {shown.map((i, k) => (
           <li key={k}>
             <button className="w-full text-left text-xs hover:underline" onClick={() => i.constituency && setActive(i.constituency)}>
-              <span className={i.level === 'error' ? 'text-red-400' : 'text-amber-300'}>{i.level === 'error' ? '✖' : '▲'}</span> {i.message}
+              {i.level === 'error' ? <XCircle size={12} className="inline align-[-2px] text-red-400" aria-hidden /> : <AlertTriangle size={12} className="inline align-[-2px] text-amber-300" aria-hidden />} {i.message}
             </button>
           </li>
         ))}
@@ -195,7 +196,7 @@ function ActiveConstituency() {
         <div className="flex-1" />
         {confirmDel ? (
           <><Button variant="danger" onClick={() => { del(c.id); setConfirmDel(false) }}>Delete</Button><Button onClick={() => setConfirmDel(false)}>Keep</Button></>
-        ) : <Button variant="danger" onClick={() => setConfirmDel(true)} title="Delete constituency">🗑</Button>}
+        ) : <Button variant="danger" onClick={() => setConfirmDel(true)} title="Delete constituency" aria-label="Delete constituency"><Trash2 size={14} /></Button>}
       </div>
       <div className="mt-3 grid grid-cols-3 gap-1.5">
         <Stat label="Electors" value={fmt(s.electors)} sub={`${s.blocks} areas`} />
@@ -224,7 +225,7 @@ function DemoBars({ label, groups, values }: { label: string; groups: readonly {
       <div className="mb-0.5 text-[10px] uppercase tracking-wide text-slate-500">{label}</div>
       <ShareBar height={7} parts={groups.map((g, i) => ({ color: DEMO_COLORS[i], value: values[i] || 0, label: `${g.label} ${pct(values[i] || 0)}` }))} />
       <div className="mt-0.5 flex flex-wrap gap-x-2 text-[10px] text-slate-400">
-        {groups.map((g, i) => <span key={g.id}><span style={{ color: DEMO_COLORS[i] }}>■</span> {g.label} {pct(values[i] || 0, 0)}</span>)}
+        {groups.map((g, i) => <span key={g.id}><Swatch color={DEMO_COLORS[i]} /> {g.label} {pct(values[i] || 0, 0)}</span>)}
       </div>
     </div>
   )

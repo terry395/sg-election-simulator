@@ -2,10 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../state/store'
 import { useDerived } from '../state/derived'
 import { useNight } from '../state/night'
-import { Button, PartyBadge, Section, ShareBar, pct, fmt } from '../components/ui'
+import { Button, PartyBadge, Section, ShareBar, Swatch, pct, fmt } from '../components/ui'
+import { FastForward, Info, Newspaper, Pause, Play, RotateCcw, SkipForward } from 'lucide-react'
+import { DISCLAIMER_SHORT } from '../data/disclaimer'
 import { SeatBar } from '../components/SeatBar'
 import { Hemicycle } from '../components/Hemicycle'
-import { buildTimeline, clock, type NightEvent } from '../model/timeline'
+import { buildTimeline, clock, type NewsTag, type NightEvent } from '../model/timeline'
 import { runElection, type SeatResult } from '../model/swing'
 import { rng } from '../model/rng'
 import { PAP } from '../data/parties'
@@ -48,10 +50,16 @@ export function NightPanel() {
   const night = useNight()
   const [mode, setMode] = useState<'surprise' | 'projection'>('surprise')
 
+  const ge = useStore((s) => s.data)!.ge
   const start = () => {
     const seed = Math.floor(Math.random() * 1e9)
     const result = mode === 'projection' ? projection : runElection(plan.constituencies, stats.byId, contests, swings, partyMap, rng(seed))
-    night.start(plan.constituencies, result, buildTimeline(plan.constituencies, result, seed), seed)
+    const news = {
+      leaders: Object.fromEntries(Object.entries(contests).map(([id, c]) => [id, c.leaders])),
+      holders: Object.fromEntries(Object.entries(stats.byId).map(([id, s]) => [id, notionalHolder(s.pap0, s.mainOpp)])),
+      prevNational: Object.fromEntries(Object.entries(ge.parties).map(([p, v]) => [p, v.national])),
+    }
+    night.start(plan.constituencies, result, buildTimeline(plan.constituencies, result, seed, news), seed)
   }
 
   // animation loop: speed = simulated minutes per real second
@@ -85,7 +93,7 @@ export function NightPanel() {
               <span><b>Exactly my forecast</b><br /><span className="text-slate-400">Results match the Forecast tab with no surprises.</span></span>
             </label>
           </div>
-          <Button variant="primary" className="mt-3 w-full py-2.5 text-sm" onClick={start}>▶ Polls close — start the count</Button>
+          <Button variant="primary" className="mt-3 w-full py-2.5 text-sm" onClick={start}><Play size={15} aria-hidden /> Polls close — start the count</Button>
         </Section>
         <Section title="Your map">
           <p className="text-xs text-slate-400">{plan.constituencies.length} constituencies · {stats.seats} seats · {fmt(stats.assignedElectors)} electors. {Object.values(contests).filter((c) => c.parties.length <= 1).length} walkovers.</p>
@@ -112,14 +120,14 @@ function NightLive({ onRestart }: { onRestart: () => void }) {
     <div>
       <Section title="Live" right={<span className="tabular text-lg font-bold text-rose-400">{night.t < 0 ? '8:00 pm' : clock(night.t)}</span>}>
         <div className="flex items-center gap-1.5">
-          <Button variant={night.playing ? 'subtle' : 'primary'} onClick={() => night.setPlaying(!night.playing)} disabled={done}>{night.playing ? '❚❚ Pause' : '▶ Play'}</Button>
-          <Button onClick={night.stepNext} disabled={done} title="Next announcement">⏭ Next</Button>
+          <Button variant={night.playing ? 'subtle' : 'primary'} onClick={() => night.setPlaying(!night.playing)} disabled={done}>{night.playing ? <><Pause size={14} aria-hidden /> Pause</> : <><Play size={14} aria-hidden /> Play</>}</Button>
+          <Button onClick={night.stepNext} disabled={done} title="Next announcement"><SkipForward size={14} aria-hidden /> Next</Button>
           <div className="flex overflow-hidden rounded-md border border-slate-700">
             {SPEEDS.map((s) => (
               <button key={s.v} onClick={() => night.setSpeed(s.v)} className={`px-2 py-1 text-xs ${night.speed === s.v ? 'bg-slate-200 text-slate-900' : 'text-slate-300 hover:bg-slate-800'}`}>{s.label}</button>
             ))}
           </div>
-          <Button onClick={night.skipToEnd} disabled={done}>Skip ⏩</Button>
+          <Button onClick={night.skipToEnd} disabled={done} title="Skip to the end">Skip <FastForward size={14} aria-hidden /></Button>
         </div>
         <div className="mt-3 flex justify-center">
           <Hemicycle seats={d.seats} total={d.total} parties={partyMap} ncmp={done ? night.result!.ncmp : undefined} width={330} />
@@ -145,6 +153,11 @@ function NightLive({ onRestart }: { onRestart: () => void }) {
         <ul className="space-y-1.5">
           {fired.length === 0 && <li className="text-xs text-slate-400">Counting has begun at the counting centres…</li>}
           {fired.map((e, k) => {
+            if (e.kind === 'news') return (
+              <li key={`news-${e.t}-${e.headline}`} className={`rounded-md border border-slate-700 bg-slate-900/70 p-2 text-xs ${k === 0 ? 'flash' : ''} ${e.cid ? 'cursor-pointer' : ''}`} onClick={() => e.cid && setActive(e.cid)}>
+                <NewsLine e={e} />
+              </li>
+            )
             const it = byId[e.cid]
             if (!it) return null
             const s = stats.byId[e.cid]
@@ -157,9 +170,53 @@ function NightLive({ onRestart }: { onRestart: () => void }) {
         </ul>
       </Section>
       <Section title="Replay">
-        <Button onClick={onRestart} className="w-full">↻ New election night (new random draw)</Button>
+        <Button onClick={onRestart} className="w-full"><RotateCcw size={14} aria-hidden /> New election night (new random draw)</Button>
         <p className="mt-2 text-[11px] text-slate-500">Seed {night.seed}. Sample counts are accurate to ±4 percentage points at 95% confidence, as with ELD's real sample counts. GE2025 national result for reference: PAP {pct(ge.parties.PAP.national)}.</p>
       </Section>
+    </div>
+  )
+}
+
+const NEWS_STYLE: Record<NewsTag, { label: string; cls: string }> = {
+  breaking: { label: 'Breaking', cls: 'bg-red-600 text-white' },
+  projection: { label: 'Projection', cls: 'bg-blue-600 text-white' },
+  analysis: { label: 'Analysis', cls: 'bg-slate-600 text-slate-100' },
+  desk: { label: 'Newsdesk', cls: 'bg-slate-200 text-slate-900' },
+}
+
+type NewsEvent = Extract<NightEvent, { kind: 'news' }>
+
+function NewsLine({ e }: { e: NewsEvent }) {
+  const s = NEWS_STYLE[e.tag]
+  return (
+    <div>
+      <div className="flex items-center gap-1.5">
+        <span className="tabular text-slate-500">{clock(e.t)}</span>
+        <span className={`rounded px-1 text-[9px] font-bold uppercase tracking-wider ${s.cls}`}>{s.label}</span>
+        <Newspaper size={12} className="text-slate-500" aria-hidden />
+      </div>
+      <div className="mt-0.5 font-semibold text-slate-100">{e.headline}</div>
+      {e.body && <div className="mt-0.5 text-[11px] text-slate-400">{e.body}</div>}
+    </div>
+  )
+}
+
+/** Lower-third news flash on the map, shown for a while after each news item. */
+function NewsTicker() {
+  const t = useNight((s) => s.t)
+  const events = useNight((s) => s.events)
+  const cursor = useNight((s) => s.cursor)
+  let latest: NewsEvent | undefined
+  for (let i = cursor - 1; i >= 0; i--) {
+    const e = events[i]
+    if (e.kind === 'news') { latest = e; break }
+  }
+  if (!latest || t - latest.t > 30) return null
+  const s = NEWS_STYLE[latest.tag]
+  return (
+    <div key={`${latest.t}-${latest.headline}`} className="news-in flex max-w-xl items-stretch overflow-hidden rounded-md bg-slate-950/90 text-xs shadow-xl ring-1 ring-slate-700 backdrop-blur">
+      <span className={`flex items-center px-2 text-[10px] font-bold uppercase tracking-wider ${s.cls}`}>{s.label}</span>
+      <span className="px-2.5 py-1.5"><b className="text-slate-100">{latest.headline}</b>{latest.body && <span className="hidden text-slate-400 sm:inline"> · {latest.body}</span>}</span>
     </div>
   )
 }
@@ -171,7 +228,7 @@ function EventLine({ e, c, r, partyMap, holder, leaders }: { e: NightEvent; c: C
     const sorted = Object.entries(e.shares).sort((a, b) => b[1] - a[1])
     return (
       <div>
-        {time} <span className="text-slate-400">Sample count</span> <b>{c.name}</b>: {sorted.map(([p, v]) => <span key={p} className="mr-1.5"><span style={{ color: partyMap[p]?.color }}>■</span> {p} {Math.round(v * 100)}%</span>)}
+        {time} <span className="text-slate-400">Sample count</span> <b>{c.name}</b>: {sorted.map(([p, v]) => <span key={p} className="mr-1.5"><Swatch color={partyMap[p]?.color} /> {p} {Math.round(v * 100)}%</span>)}
       </div>
     )
   }
@@ -239,7 +296,7 @@ function FinalSummary({ plan, partyMap }: { plan: Constituency[]; partyMap: Reco
           })}
         </tbody>
       </table>
-      <p className="mt-2 rounded border border-amber-700/50 bg-amber-950/30 px-2 py-1 text-[11px] text-amber-100">⚠️ A simulated election for fun, based on your own settings. Not a poll, survey or official projection.</p>
+      <p className="mt-2 flex items-start gap-1.5 rounded border border-amber-700/50 bg-amber-950/30 px-2 py-1 text-[11px] text-amber-100"><Info size={13} className="mt-px shrink-0" aria-hidden /><span>A simulated election based on your own settings. {DISCLAIMER_SHORT}</span></p>
       <p className="mt-1 text-[10px] text-slate-500">National vote shares compare against all valid votes nationwide (GE2025 PAP {pct(ge.parties.PAP.national)}).</p>
       {gains.length > 0 && (
         <div className="mt-2 text-xs">
@@ -275,6 +332,7 @@ export function NightOverlay() {
         ))}
         <span className="text-xs text-slate-400">{d.total - d.declared} to declare</span>
       </div>
+      <NewsTicker />
       {called && (
         <div className="rounded-lg px-4 py-2 text-center text-sm font-extrabold uppercase tracking-wide shadow-xl" style={{ background: partyMap[leader[0]]?.color, color: '#fff' }}>
           {leader[0]} wins a majority — {leader[1]} seats declared

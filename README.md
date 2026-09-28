@@ -6,7 +6,7 @@ An interactive web app for political enthusiasts: redraw Singapore's electoral b
 
 ## Features
 
-1. **Draw boundaries**: start from the GE2025 map or a blank map. Paint, fill, lasso or erase ~700 building blocks (about polling-district size) into SMCs and GRCs of 3–6 MPs. Stats update live: electors, electors per MP, deviation from the quota, demographics, and the notional GE2025 result of the new shape. Rule checks cover unassigned areas, the ±30% quota, at least 8 SMCs, GRC size and contiguity. **✨ Auto-draw** redraws the whole map in seconds with a built-in redistricting algorithm (balanced seeding, region growing and simulated annealing), using one of four methods: EBRC-style minimal changes, fair & compact, a custom SMC/GRC mix such as all-SMCs, or educational gerrymanders (favour PAP, favour opposition, most competitive). Map lenses show elector quota, GE2025 PAP vote, age, ethnicity, housing and density. You can toggle 2025 register or 2030 projected electors and show the GE2025 lines as an overlay.
+1. **Draw boundaries**: start from the GE2025 map or a blank map. Paint, fill, lasso or erase ~700 building blocks (about polling-district size) into SMCs and GRCs of 3–6 MPs. Stats update live: electors, electors per MP, deviation from the quota, demographics, and the notional GE2025 result of the new shape. Rule checks cover unassigned areas, the ±30% quota, at least 8 SMCs, GRC size and contiguity. **Auto-draw** redraws the whole map in seconds with a built-in redistricting algorithm (balanced seeding, region growing and simulated annealing), using one of four methods: EBRC-style minimal changes, fair & compact, a custom SMC/GRC mix such as all-SMCs, or educational gerrymanders (favour PAP, favour opposition, most competitive). Map lenses show elector quota, GE2025 PAP vote, age, ethnicity, housing and density. You can toggle 2025 register or 2030 projected electors and show the GE2025 lines as an overlay.
 2. **Contests**: set the party line-up per seat. Multi-cornered fights and walkovers are allowed. You can also:
    - add anchor-minister or star-candidate bonuses
    - adjust party strength
@@ -16,14 +16,20 @@ An interactive web app for political enthusiasts: redraw Singapore's electoral b
    - preset scenarios
    - live projected Parliament and a closest-seats table
    - 2,000-run Monte Carlo in a Web Worker: majority and two-thirds probabilities, seat ranges and per-seat win probabilities
-4. **Election night**: polls close at 8pm, then sample counts arrive (±4%). Declarations follow through the night, smaller SMCs first and big GRCs last, with recounts in close seats. The map fills in live alongside the seat tally, majority call, gains, popular vote vs GE2025 and NCMP allocation.
+4. **Election night**: polls close at 8pm, then sample counts arrive (±4%). Declarations follow through the night, smaller SMCs first and big GRCs last, with recounts in close seats. The map fills in live alongside the seat tally, majority call, gains, popular vote vs GE2025 and NCMP allocation. Occasional news flashes (first result, seats changing hands, photo finishes, majority and supermajority calls, final round-up) appear in the announcements feed and as a ticker over the map.
 
 - **Anchor leaders:** pick each party's team leader per seat from the real GE2025 candidates, or type any name. Well-known figures carry a suggested vote effect relative to the 2025 anchor.
 - **Live parliament chart** that fills seat by seat on election night (NCMP seats shown as rings), also shown in the forecast.
-- **🏛 Parties:** short, neutral beginner profiles of every party, from the top bar or any party badge.
+- **Parties:** short, neutral beginner profiles of every party, from the top bar or any party badge.
 - Auto-draw names are always unique real place names, such as compass directions or URA neighbourhoods, never numbers.
 
-Maps, contests and swings autosave locally and can be shared as a link or exported/imported as JSON. Every shared link and export carries a disclaimer that it is an individual's scenario made for fun, not a poll or official projection, and people opening a shared link see the same notice.
+Maps, contests and swings autosave locally and can be shared as a link or exported/imported as JSON. Every shared link and export carries a disclaimer that it is an individual's scenario, not a poll or official projection, and people opening a shared link see the same notice.
+
+## Disclaimer
+
+This simulator does not represent any real-life polling, survey or official projection. No user data is recorded: nothing you do is sent to a server, and your work is saved only in your own browser. It is intended purely for entertainment and educational purposes, and is not affiliated with the Elections Department or any political party.
+
+Icons: [Lucide](https://lucide.dev) (ISC licence).
 
 ## Run
 

@@ -4,6 +4,7 @@ import { PARTY_INFO } from '../data/partyInfo'
 import { NOTABLE } from '../data/candidates'
 import { ink } from '../lib/color'
 import { pct } from './ui'
+import { Landmark, X } from 'lucide-react'
 
 /** Side drawer with beginner-friendly information about each party. */
 export function PartyDrawer() {
@@ -30,8 +31,8 @@ export function PartyDrawer() {
       <aside className="scroll-thin flex h-full w-full max-w-md flex-col overflow-y-auto border-l border-slate-700 bg-slate-950 shadow-2xl" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Political parties">
         <div className="sticky top-0 z-10 border-b border-slate-800 bg-slate-950/95 px-4 pt-3 backdrop-blur">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold">🏛 Singapore's political parties</h2>
-            <button onClick={() => show(null)} className="text-slate-400 hover:text-white" aria-label="Close">✕</button>
+            <h2 className="flex items-center gap-2 text-sm font-bold"><Landmark size={16} aria-hidden /> Singapore's political parties</h2>
+            <button onClick={() => show(null)} className="text-slate-400 hover:text-white" aria-label="Close"><X size={18} /></button>
           </div>
           <div className="flex gap-1 overflow-x-auto py-2">
             {parties.map((p) => (

@@ -79,5 +79,10 @@ export function Stat({ label, value, sub }: { label: string; value: ReactNode; s
   )
 }
 
-export const pct = (v: number, d = 1) => `${(v * 100).toFixed(d)}%`
+/** Small colour square used in legends. */
+export function Swatch({ color, className = '' }: { color?: string; className?: string }) {
+  return <span className={`inline-block h-2 w-2 rounded-[2px] align-middle ${className}`} style={{ background: color ?? '#94a3b8' }} aria-hidden />
+}
+
+export const pct =(v: number, d = 1) => `${(v * 100).toFixed(d)}%`
 export const fmt = (v: number) => Math.round(v).toLocaleString('en-SG')

@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useStore } from '../state/store'
 import { Button, Section, Stat, fmt, pct } from '../components/ui'
+import { ArrowLeft, ArrowRight, CheckCircle2, Dices, Landmark, Puzzle, Ruler, Scale, Undo2, Wand2, type LucideIcon } from 'lucide-react'
 import { DEFAULT_OPTIONS, type GerryGoal, type Method, type RedistrictOptions, type RedistrictReport, type RedistrictResult } from '../model/redistrict'
 
-const METHODS: { id: Method; icon: string; title: string; blurb: string }[] = [
-  { id: 'ebrc', icon: '🏛️', title: 'EBRC-style', blurb: 'Update the existing map the way the real committee would: small changes to fix seats that have too many or too few voters.' },
-  { id: 'compact', icon: '📐', title: 'Fair & compact', blurb: 'A brand-new map of neat, equal-sized constituencies that keep towns together.' },
-  { id: 'custom', icon: '🧩', title: 'Custom mix', blurb: 'You choose exactly how many SMCs and GRCs of each size, e.g. 97 single-member seats.' },
-  { id: 'gerrymander', icon: '🎭', title: 'Gerrymander', blurb: 'For learning: see how drawing lines alone can tilt an election, while staying within the rules.' },
+const METHODS: { id: Method; icon: LucideIcon; title: string; blurb: string }[] = [
+  { id: 'ebrc', icon: Landmark, title: 'EBRC-style', blurb: 'Update the existing map the way the real committee would: small changes to fix seats that have too many or too few voters.' },
+  { id: 'compact', icon: Ruler, title: 'Fair & compact', blurb: 'A brand-new map of neat, equal-sized constituencies that keep towns together.' },
+  { id: 'custom', icon: Puzzle, title: 'Custom mix', blurb: 'You choose exactly how many SMCs and GRCs of each size, e.g. 97 single-member seats.' },
+  { id: 'gerrymander', icon: Scale, title: 'Gerrymander', blurb: 'For learning: see how drawing lines alone can tilt an election, while staying within the rules.' },
 ]
 
 const GOALS: { id: GerryGoal; label: string; hint: string }[] = [
@@ -94,7 +95,7 @@ export function AutoDrawPanel({ onClose }: Props) {
 
   return (
     <div>
-      <Section title={<span className="text-sm normal-case tracking-normal text-slate-100">✨ Auto-draw</span>} right={<Button onClick={onClose}>← Manual tools</Button>}>
+      <Section title={<span className="flex items-center gap-1.5 text-sm normal-case tracking-normal text-slate-100"><Wand2 size={15} aria-hidden /> Auto-draw</span>} right={<Button onClick={onClose}><ArrowLeft size={14} aria-hidden /> Manual tools</Button>}>
         <p className="text-xs leading-relaxed text-slate-400">Pick a method and the simulator redraws every boundary for you in a few seconds. It uses the {year === 2030 ? '2030 projected' : '2025'} voter numbers (switch at the top). You can undo, or fine-tune the result by hand afterwards.</p>
       </Section>
 
@@ -105,7 +106,7 @@ export function AutoDrawPanel({ onClose }: Props) {
           {METHODS.map((m) => (
             <button key={m.id} onClick={() => chooseMethod(m.id)}
               className={`rounded-lg border p-2 text-left transition ${opts.method === m.id ? 'border-rose-500 bg-rose-600/15' : 'border-slate-700 hover:bg-slate-900'}`}>
-              <div className="text-sm font-semibold"><span className="mr-1">{m.icon}</span>{m.title}</div>
+              <div className="flex items-center gap-1.5 text-sm font-semibold"><m.icon size={15} className="text-slate-300" aria-hidden />{m.title}</div>
               <div className="mt-0.5 text-[11px] leading-snug text-slate-400">{m.blurb}</div>
             </button>
           ))}
@@ -182,7 +183,7 @@ export function AutoDrawPanel({ onClose }: Props) {
         </Field>
         <Field label="Variation" hint="Each number gives a different map with the same settings.">
           <NumberInput value={opts.seed} min={1} max={9999} onChange={(v) => set({ seed: v })} />
-          <button className="ml-2 text-sm" title="Random variation" onClick={() => set({ seed: 1 + Math.floor(Math.random() * 9999) })}>🎲</button>
+          <button className="ml-2 inline-flex text-slate-300 hover:text-white" title="Random variation" aria-label="Random variation" onClick={() => set({ seed: 1 + Math.floor(Math.random() * 9999) })}><Dices size={16} /></button>
         </Field>
         {opts.method === 'gerrymander' && (
           <p className="mt-2 rounded-md border border-amber-700/60 bg-amber-950/40 p-2 text-[11px] leading-snug text-amber-100">
@@ -201,7 +202,7 @@ export function AutoDrawPanel({ onClose }: Props) {
           </div>
         ) : (
           <>
-            <Button variant="primary" className="w-full py-2 text-sm" disabled={!!problem} onClick={() => draw()}>✨ Draw the map</Button>
+            <Button variant="primary" className="w-full py-2 text-sm" disabled={!!problem} onClick={() => draw()}><Wand2 size={15} aria-hidden /> Draw the map</Button>
             <p className="mt-1.5 text-[11px] text-slate-500">This replaces your current map. You can always press Undo.</p>
           </>
         )}
@@ -213,8 +214,8 @@ export function AutoDrawPanel({ onClose }: Props) {
 function ResultCard({ r, method, onUndo, onAgain, onContests }: { r: RedistrictReport; method: Method; onUndo: () => void; onAgain: () => void; onContests: () => void }) {
   const m = METHODS.find((x) => x.id === method)!
   return (
-    <Section title={<span className="text-emerald-300">✓ New map drawn</span>} right={<span className="text-[11px] text-slate-500">{(r.ms / 1000).toFixed(1)}s</span>} className="bg-emerald-950/20">
-      <p className="text-xs text-slate-300">{m.icon} {m.title}: <b>{r.seats} seats</b> in {r.smc + r.grc} constituencies ({r.smc} SMCs, {r.grc} GRCs).</p>
+    <Section title={<span className="flex items-center gap-1.5 text-emerald-300"><CheckCircle2 size={14} aria-hidden /> New map drawn</span>} right={<span className="text-[11px] text-slate-500">{(r.ms / 1000).toFixed(1)}s</span>} className="bg-emerald-950/20">
+      <p className="text-xs text-slate-300"><m.icon size={13} className="mr-1 inline align-[-2px]" aria-hidden />{m.title}: <b>{r.seats} seats</b> in {r.smc + r.grc} constituencies ({r.smc} SMCs, {r.grc} GRCs).</p>
       <div className="mt-2 grid grid-cols-2 gap-1.5">
         <Stat label="Largest imbalance" value={`±${(r.maxDeviation * 100).toFixed(1)}%`} sub={`average ±${(r.meanDeviation * 100).toFixed(1)}%`} />
         <Stat label="Voters kept in same seat" value={pct(r.keptShare, 0)} sub="same name as in GE2025" />
@@ -222,9 +223,9 @@ function ResultCard({ r, method, onUndo, onAgain, onContests }: { r: RedistrictR
         <Stat label="Close seats" value={r.competitiveSeats} sub="within 5 points of 50-50" />
       </div>
       <div className="mt-2 flex flex-wrap gap-1.5">
-        <Button onClick={onUndo}>↶ Undo</Button>
-        <Button onClick={onAgain}>🎲 Try another variation</Button>
-        <Button variant="primary" onClick={onContests}>Next: Contests →</Button>
+        <Button onClick={onUndo}><Undo2 size={14} aria-hidden /> Undo</Button>
+        <Button onClick={onAgain}><Dices size={14} aria-hidden /> Try another variation</Button>
+        <Button variant="primary" onClick={onContests}>Next: Contests <ArrowRight size={14} aria-hidden /></Button>
       </div>
     </Section>
   )

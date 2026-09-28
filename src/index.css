@@ -14,5 +14,7 @@ body { @apply bg-slate-950 text-slate-100 antialiased; margin: 0; }
 input[type=range] { accent-color: #f43f5e; }
 @keyframes flash { 0% { background: rgb(250 204 21 / .35);} 100% { background: transparent; } }
 .flash { animation: flash 1.2s ease-out; }
+@keyframes news-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.news-in { animation: news-in .35s ease-out; }
 @keyframes seat-pop { 0% { transform: scale(1); } 40% { transform: scale(1.9); } 100% { transform: scale(1); } }
 .seat-pop { animation: seat-pop .6s ease-out; }
