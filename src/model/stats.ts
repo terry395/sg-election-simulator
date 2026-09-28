@@ -197,3 +197,16 @@ export function isContiguous(ids: number[], blocks: Block[]): boolean {
   }
   return populated.every((i) => seen.has(i))
 }
+
+export const titleCase = (s: string) => s.toLowerCase().replace(/(^|[\s-/])(\w)/g, (m) => m.toUpperCase())
+
+/** A constituency name from the one or two towns (planning areas) holding most of its electors. */
+export function suggestName(ids: number[], blocks: Block[]): string {
+  const pa: Record<string, number> = {}
+  for (const i of ids) pa[blocks[i].pa] = (pa[blocks[i].pa] || 0) + blocks[i].e25 + 1
+  const ranked = Object.entries(pa).sort((a, b) => b[1] - a[1])
+  const top = ranked.slice(0, 1)
+  // add a second town only if it is a sizeable part of the seat
+  if (ranked[1] && ranked[1][1] > ranked[0][1] * 0.35) top.push(ranked[1])
+  return top.map(([n]) => titleCase(n)).join('-')
+}

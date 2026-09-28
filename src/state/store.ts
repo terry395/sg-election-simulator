@@ -52,6 +52,8 @@ interface State {
   addConstituency: (type: 'SMC' | 'GRC') => string
   updateConstituency: (id: string, patch: Partial<Constituency>) => void
   deleteConstituency: (id: string) => void
+  /** swap in a whole new map (auto-draw); undoable */
+  replacePlan: (plan: Plan) => void
 
   setContest: (id: string, c: Contest) => void
   resetContests: () => void
@@ -165,6 +167,11 @@ export const useStore = create<State>((set, get) => ({
         contestOverrides,
       }
     })
+  },
+
+  replacePlan: (plan) => {
+    get().checkpoint()
+    set({ plan, contestOverrides: {}, activeId: plan.constituencies[0]?.id ?? null, tool: 'inspect' })
   },
 
   setContest: (id, c) => set((s) => ({ contestOverrides: { ...s.contestOverrides, [id]: c } })),

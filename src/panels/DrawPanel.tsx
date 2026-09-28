@@ -5,6 +5,8 @@ import { Button, Section, ShareBar, Stat, fmt, pct } from '../components/ui'
 import { DEMO_GROUPS } from '../model/swing'
 import { LENS_INFO } from '../map/useBlockColors'
 import { fmtDev } from '../model/validation'
+import { suggestName } from '../model/stats'
+import { AutoDrawPanel } from './AutoDrawPanel'
 import { PAP } from '../data/parties'
 
 const TOOLS: { id: Tool; label: string; key: string; icon: string; hint: string }[] = [
@@ -42,6 +44,8 @@ export function DrawPanel() {
   const canRedo = useStore((s) => s.future.length > 0)
   const loadPreset = useStore((s) => s.loadPreset)
   const [confirm, setConfirm] = useState<null | 'ge2025' | 'blank'>(null)
+  const [auto, setAuto] = useState(false)
+  if (auto) return <AutoDrawPanel onClose={() => setAuto(false)} />
 
   return (
     <div>
@@ -53,10 +57,16 @@ export function DrawPanel() {
             <Button onClick={() => setConfirm(null)}>Cancel</Button>
           </div>
         ) : (
-          <div className="flex gap-2">
-            <Button className="flex-1" onClick={() => setConfirm('ge2025')}>GE2025 boundaries</Button>
-            <Button className="flex-1" onClick={() => setConfirm('blank')}>Blank map</Button>
-          </div>
+          <>
+            <div className="flex gap-2">
+              <Button className="flex-1" onClick={() => setConfirm('ge2025')}>GE2025 boundaries</Button>
+              <Button className="flex-1" onClick={() => setConfirm('blank')}>Blank map</Button>
+            </div>
+            <button onClick={() => setAuto(true)} className="mt-2 flex w-full items-center gap-2 rounded-md border border-violet-500/60 bg-gradient-to-r from-violet-600/25 to-rose-600/20 px-3 py-2 text-left hover:from-violet-600/40">
+              <span className="text-lg">✨</span>
+              <span><span className="block text-sm font-semibold">Auto-draw the whole map</span><span className="block text-[11px] text-slate-300">EBRC-style, fair & compact, custom mix or gerrymander</span></span>
+            </button>
+          </>
         )}
       </Section>
 
@@ -147,13 +157,7 @@ function ActiveConstituency() {
   const [confirmDel, setConfirmDel] = useState(false)
   const c = plan.constituencies.find((x) => x.id === activeId)
   const s = c ? stats.byId[c.id] : null
-  const suggested = useMemo(() => {
-    if (!c) return ''
-    const pa: Record<string, number> = {}
-    for (const i of membersOf[c.id] ?? []) pa[data.blocks[i].pa] = (pa[data.blocks[i].pa] || 0) + data.blocks[i].e25
-    const top = Object.entries(pa).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([n]) => n.toLowerCase().replace(/(^|\s)(\w)/g, (m) => m.toUpperCase()))
-    return top.join('-')
-  }, [c, membersOf, data])
+  const suggested = useMemo(() => (c ? suggestName(membersOf[c.id] ?? [], data.blocks) : ''), [c, membersOf, data])
   if (c && s && s.electors === 0) return (
     <Section title="Active constituency" right={<span className="h-3 w-3 rounded-sm" style={{ background: c.color }} />}>
       <div className="text-sm font-semibold">{c.name} <span className="font-normal text-slate-400">{c.type === 'GRC' ? `GRC · ${c.seats} MPs` : 'SMC'}</span></div>
