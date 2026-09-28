@@ -1,0 +1,736 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Beginner Guide · GE2030 Simulator</title>
+<meta name="description" content="A plain-English, step-by-step guide to the Singapore GE2030 election simulator, with screenshots and a glossary of election terms." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23dc2626'/><path d='M8 17l5 5 11-12' stroke='white' stroke-width='3.5' fill='none' stroke-linecap='round'/></svg>" />
+<style>
+  :root {
+    --bg: #f8fafc; --panel: #ffffff; --ink: #0f172a; --muted: #475569; --faint: #64748b;
+    --line: #e2e8f0; --accent: #e11d48; --accent-soft: #ffe4e6; --tip: #ecfeff; --tip-line: #67e8f9;
+    --warn: #fffbeb; --warn-line: #fbbf24; --code: #f1f5f9;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #020617; --panel: #0f172a; --ink: #e2e8f0; --muted: #a8b3c4; --faint: #7c8aa0;
+      --line: #1e293b; --accent: #fb7185; --accent-soft: #4c0519; --tip: #082f49; --tip-line: #0e7490;
+      --warn: #3a2a05; --warn-line: #b45309; --code: #1e293b;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.65 "Inter", system-ui, "Segoe UI", Roboto, sans-serif; }
+  a { color: var(--accent); }
+  img { max-width: 100%; display: block; }
+
+  .topbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 12px; padding: 10px 20px;
+    background: #020617; color: #fff; border-bottom: 1px solid #1e293b; }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #fff; }
+  .logo { width: 32px; height: 32px; border-radius: 7px; background: #e11d48; display: grid; place-items: center; font-weight: 900; }
+  .brand b { display: block; font-size: 15px; line-height: 1.2; }
+  .brand span { display: block; font-size: 12px; color: #94a3b8; line-height: 1.2; }
+  .open-app { margin-left: auto; background: #e11d48; color: #fff; text-decoration: none; font-weight: 600; font-size: 14px;
+    padding: 8px 14px; border-radius: 8px; white-space: nowrap; }
+  .open-app:hover { background: #f43f5e; }
+  .menu-btn { display: none; background: none; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 6px 10px; font-size: 14px; }
+
+  .layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 40px; max-width: 1180px; margin: 0 auto; padding: 0 20px; }
+  nav.toc { position: sticky; top: 72px; align-self: start; max-height: calc(100vh - 90px); overflow-y: auto; padding: 24px 0; font-size: 14px; }
+  nav.toc ol { list-style: none; margin: 0; padding: 0; }
+  nav.toc li { margin: 2px 0; }
+  nav.toc a { display: block; color: var(--muted); text-decoration: none; padding: 4px 10px; border-left: 2px solid transparent; }
+  nav.toc a:hover { color: var(--ink); }
+  nav.toc a.active { color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
+  nav.toc .sub a { padding-left: 24px; font-size: 13px; }
+  main { padding: 24px 0 80px; max-width: 800px; }
+
+  h1 { font-size: 2.1rem; line-height: 1.2; margin: 12px 0 8px; }
+  h2 { font-size: 1.55rem; margin: 64px 0 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  h3 { font-size: 1.15rem; margin: 36px 0 8px; }
+  .lead { font-size: 1.12rem; color: var(--muted); }
+  .step-tag { display: inline-block; background: var(--accent); color: #fff; font-size: 12px; font-weight: 700; letter-spacing: .04em;
+    text-transform: uppercase; border-radius: 999px; padding: 2px 10px; margin-bottom: 6px; }
+  kbd { font: 600 0.85em ui-monospace, Consolas, monospace; background: var(--code); border: 1px solid var(--line); border-bottom-width: 2px;
+    border-radius: 5px; padding: 0 6px; }
+  .ui { font-weight: 600; background: var(--code); border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
+
+  .callout { border-left: 4px solid var(--tip-line); background: var(--tip); border-radius: 8px; padding: 12px 16px; margin: 18px 0; }
+  .callout.warn { border-color: var(--warn-line); background: var(--warn); }
+  .callout > b:first-child { display: block; margin-bottom: 2px; }
+
+  .quick { counter-reset: q; list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+  .quick li { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; font-size: 15px; }
+  .quick li::before { counter-increment: q; content: counter(q); display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%;
+    background: var(--accent); color: #fff; font-weight: 700; margin-bottom: 6px; }
+  .quick b { display: block; }
+
+  dl.terms { display: grid; grid-template-columns: 1fr; gap: 10px; margin: 16px 0; }
+  dl.terms > div { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; }
+  dl.terms dt { font-weight: 700; }
+  dl.terms dd { margin: 2px 0 0; color: var(--muted); }
+  dl.terms dd i { color: var(--faint); }
+
+  .table-wrap { overflow-x: auto; margin: 16px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--faint); }
+  .badge { display: inline-block; min-width: 44px; text-align: center; font-weight: 800; font-size: 12px; border-radius: 4px; padding: 2px 6px; color: #fff; }
+
+  figure.shot { margin: 22px 0 28px; }
+  .frame { position: relative; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 8px 30px rgb(0 0 0 / .18); cursor: zoom-in; }
+  .pin { position: absolute; transform: translate(-50%, -50%); width: clamp(18px, 2.3vw, 28px); height: clamp(18px, 2.3vw, 28px); border-radius: 50%;
+    background: #facc15; color: #111827; border: 2px solid #111827; font: 800 clamp(10px, 1.2vw, 14px)/1 system-ui, sans-serif;
+    display: grid; place-items: center; box-shadow: 0 0 0 3px rgb(250 204 21 / .35), 0 2px 6px rgb(0 0 0 / .5); pointer-events: none; }
+  figcaption { font-size: 15px; color: var(--muted); margin-top: 10px; }
+  figcaption ol { margin: 6px 0 0; padding: 0; list-style: none; counter-reset: k; }
+  figcaption li { position: relative; padding-left: 32px; margin: 5px 0; }
+  figcaption li::before { counter-increment: k; content: counter(k); position: absolute; left: 0; top: 2px; width: 22px; height: 22px; border-radius: 50%;
+    background: #facc15; color: #111827; border: 2px solid #111827; font: 800 12px/18px system-ui, sans-serif; text-align: center; }
+  figcaption .title { font-weight: 600; color: var(--ink); }
+
+  ol.steps { padding-left: 22px; }
+  ol.steps li { margin: 6px 0; }
+
+  .tools { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin: 14px 0; }
+  .tools div { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; font-size: 15px; }
+  .tools b { display: block; }
+
+  details { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; margin: 10px 0; }
+  details summary { cursor: pointer; font-weight: 600; }
+  details p { color: var(--muted); margin: 8px 0 2px; }
+
+  .next { display: flex; justify-content: space-between; gap: 12px; margin-top: 30px; }
+  .next a { text-decoration: none; font-weight: 600; }
+
+  .lightbox { position: fixed; inset: 0; z-index: 50; background: rgb(2 6 23 / .92); display: none; align-items: center; justify-content: center; padding: 16px; cursor: zoom-out; }
+  .lightbox.open { display: flex; }
+  .lightbox .frame { max-width: min(1440px, 100%); max-height: 100%; cursor: zoom-out; box-shadow: none; }
+  .lightbox .frame img { max-height: calc(100vh - 32px); width: auto; }
+
+  footer { color: var(--faint); font-size: 14px; border-top: 1px solid var(--line); margin-top: 60px; padding-top: 16px; }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; gap: 0; }
+    .menu-btn { display: inline-block; }
+    nav.toc { display: none; position: fixed; top: 56px; left: 0; right: 0; max-height: 70vh; background: var(--panel); border-bottom: 1px solid var(--line);
+      padding: 12px 16px; z-index: 15; box-shadow: 0 10px 30px rgb(0 0 0 / .3); }
+    nav.toc.open { display: block; }
+    .brand span { display: none; }
+    h1 { font-size: 1.7rem; }
+    body { font-size: 16px; }
+  }
+  @media (max-width: 480px) {
+    .brand > div:last-child { display: none; }
+    .open-app { padding: 7px 10px; font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="toc">☰ Contents</button>
+  <a class="brand" href="./">
+    <div class="logo">✓</div>
+    <div><b>GE2030 Simulator</b><span>Beginner guide</span></div>
+  </a>
+  <a class="open-app" href="./">Open the simulator →</a>
+</header>
+
+<div class="layout">
+  <nav class="toc" id="toc" aria-label="Contents">
+    <ol>
+      <li><a href="#welcome">Welcome</a></li>
+      <li><a href="#quick-start">60-second quick start</a></li>
+      <li><a href="#basics">Singapore elections in 2 minutes</a></li>
+      <li class="sub"><a href="#glossary">Glossary of terms</a></li>
+      <li class="sub"><a href="#parties">The parties</a></li>
+      <li><a href="#tour">A tour of the screen</a></li>
+      <li><a href="#step1">Step 1 · Draw boundaries</a></li>
+      <li class="sub"><a href="#step1-select">Look around</a></li>
+      <li class="sub"><a href="#step1-tools">The drawing tools</a></li>
+      <li class="sub"><a href="#step1-example">Example: a new SMC</a></li>
+      <li class="sub"><a href="#step1-lasso">Using the lasso</a></li>
+      <li class="sub"><a href="#step1-checks">Fixing problems</a></li>
+      <li class="sub"><a href="#step1-lens">Map lenses</a></li>
+      <li><a href="#step2">Step 2 · Contests</a></li>
+      <li><a href="#step3">Step 3 · Swings & forecast</a></li>
+      <li class="sub"><a href="#step3-swings">Types of swing</a></li>
+      <li class="sub"><a href="#step3-sims">2,000 simulations</a></li>
+      <li><a href="#step4">Step 4 · Election night</a></li>
+      <li><a href="#share">Saving & sharing</a></li>
+      <li><a href="#faq">Tips & FAQ</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <!-- ============================================================ WELCOME -->
+    <section id="welcome">
+      <h1>How to use the GE2030 Simulator</h1>
+      <p class="lead">This simulator lets you play "election designer" for Singapore. You redraw the voting map, decide which parties stand where, choose how people's votes change, and then watch a pretend election night unfold, seat by seat.</p>
+      <p>You don't need to know anything about politics to use it. This guide explains every button and every election word in plain English, with pictures. It takes about 10 minutes to read, and you can jump to any part using the contents list.</p>
+      <div class="callout"><b>Just want to play?</b> Open the simulator, click the <span class="ui">4 Election night</span> tab and press <span class="ui">▶ Polls close — start the count</span>. You'll see the 2025 map play out as a live results night. Come back here when you want to understand what's going on.</div>
+    </section>
+
+    <section id="quick-start">
+      <h2>60-second quick start</h2>
+      <p>The simulator works in four steps, shown as four tabs along the top of the screen. You can do them in order, or skip straight to any of them.</p>
+      <ol class="quick">
+        <li><b>Draw boundaries</b>Decide which neighbourhoods vote together. Or just keep the real 2025 map.</li>
+        <li><b>Contests</b>Choose which parties stand in each area.</li>
+        <li><b>Swings & forecast</b>Decide whether voters lean more towards the government or the opposition than last time.</li>
+        <li><b>Election night</b>Watch the votes being counted and see who wins.</li>
+      </ol>
+    </section>
+
+    <!-- ============================================================ BASICS -->
+    <section id="basics">
+      <h2>Singapore elections in 2 minutes</h2>
+      <p>Every few years, Singapore holds a <b>General Election (GE)</b> to choose the Members of Parliament (MPs) who make the country's laws. The most recent one was <b>GE2025</b>, held on 3 May 2025. The next one is often called <b>GE2030</b>, because it is due by around then. That is the election this simulator imagines.</p>
+      <p>Singapore is not one big vote. The island is cut into areas called <b>constituencies</b>. Each constituency elects its own MP or team of MPs. Whichever party wins the most seats in Parliament forms the government. In GE2025 there were <b>33 constituencies</b> electing <b>97 MPs</b>.</p>
+      <p>There are two kinds of constituency:</p>
+      <ul>
+        <li><b>SMC (Single Member Constituency):</b> a smaller area that elects <b>one</b> MP. Think of it as one person representing one neighbourhood.</li>
+        <li><b>GRC (Group Representation Constituency):</b> a bigger area that elects a <b>team of 3 to 6 MPs</b> together. Voters choose between whole teams, not individuals. By law, each team must include at least one MP from a minority community (Malay, Indian or another minority), so that Parliament reflects Singapore's mix of races.</li>
+      </ul>
+      <p>Before each election, a government committee called the <b>Electoral Boundaries Review Committee (EBRC)</b> redraws the lines between constituencies, because people move and new towns get built. <b>That's the job you get to do in Step 1.</b></p>
+
+      <h3 id="glossary">Glossary of terms</h3>
+      <p>You'll see these words in the simulator. Each has a short definition and an everyday comparison.</p>
+      <dl class="terms">
+        <div><dt>Elector</dt><dd>A person allowed to vote: a Singapore citizen aged 21 or older who is on the register of voters. Voting is compulsory in Singapore, so most electors do vote. <i>About 2.76 million people could vote in GE2025.</i></dd></div>
+        <div><dt>Constituency (also "electoral division")</dt><dd>One voting area on the map. <i>Like one class in a school vote: each class picks its own representative.</i></dd></div>
+        <div><dt>Seat</dt><dd>One place in Parliament, filled by one MP. A 5-member GRC is worth 5 seats.</dd></div>
+        <div><dt>Electoral boundary</dt><dd>The line on the map that separates one constituency from another. Moving it changes who votes where.</dd></div>
+        <div><dt>Electors per MP / quota</dt><dd>How many voters each MP represents. For fairness, every MP should represent roughly the same number of people. The "quota" is the national average. The EBRC keeps every constituency within <b>±30%</b> of it. <i>If one MP speaks for 20,000 people and another for 40,000, the first group's votes count for more.</i></dd></div>
+        <div><dt>Contiguous</dt><dd>All in one connected piece. A constituency shouldn't be split into separate islands of houses on the map.</dd></div>
+        <div><dt>Contest / straight fight / three-cornered fight</dt><dd>A contest is when more than one party stands in a constituency. A straight fight has two parties; a three-cornered fight has three. <i>More parties usually means the opposition vote gets split.</i></dd></div>
+        <div><dt>Walkover</dt><dd>When only one party turns up to stand in a constituency, so it wins without any voting. <i>Like winning a match because the other team didn't show up.</i> In GE2025, Marine Parade–Braddell Heights GRC was a walkover.</dd></div>
+        <div><dt>Vote share</dt><dd>The percentage of valid votes a party gets. Winning 60% means 6 out of every 10 voters picked that party.</dd></div>
+        <div><dt>Popular vote</dt><dd>A party's vote share added up across the whole country.</dd></div>
+        <div><dt>Majority</dt><dd>More than half of all seats in Parliament. The party with a majority forms the government. With 97 seats, a majority is 49.</dd></div>
+        <div><dt>Two-thirds (⅔) supermajority</dt><dd>Two out of every three seats. A party with this many seats can change most parts of the Constitution on its own.</dd></div>
+        <div><dt>Swing</dt><dd>How much a party's vote share goes up or down compared with last time. It is measured in <b>percentage points ("pp")</b>. <i>If PAP got 60% last time and 55% this time, that's a 5-point swing away from PAP.</i></dd></div>
+        <div><dt>Turnout</dt><dd>The percentage of electors who actually voted. It is usually about 92–94% in Singapore because voting is compulsory.</dd></div>
+        <div><dt>Notional result</dt><dd>A "what-if" result. If you draw a new constituency, it didn't exist in 2025, so the simulator works out how the people inside it voted in 2025. That estimate is the notional result.</dd></div>
+        <div><dt>Sample count</dt><dd>An early estimate released on election night, before the full count is finished. Officials count a random sample of ballots from each polling station. It is usually accurate to within about 4 percentage points.</dd></div>
+        <div><dt>Recount</dt><dd>If the winner beats the runner-up by 2% or less, the candidates can ask for the votes to be counted again.</dd></div>
+        <div><dt>NCMP (Non-Constituency MP)</dt><dd>Singapore guarantees at least 12 opposition voices in Parliament. If fewer than 12 opposition MPs win seats, the best-performing losing opposition candidates are offered extra seats as NCMPs, provided they won at least 15% of the vote in their constituency.</dd></div>
+        <div><dt>Incumbent / anchor minister</dt><dd>The MP who currently holds the seat. An "anchor minister" is a senior government minister leading a GRC team; they often attract extra votes.</dd></div>
+        <div><dt>Opposition</dt><dd>Any party that isn't in government. In Singapore that means every party except the PAP.</dd></div>
+      </dl>
+
+      <h3 id="parties">The parties</h3>
+      <p>Parties are shown by short abbreviations and their own colours throughout the simulator:</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Badge</th><th>Party</th><th>GE2025 result</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge" style="background:#1e3a9e">PAP</span></td><td>People's Action Party</td><td>The governing party since 1959. Won 87 of 97 seats, 65.6% of the vote.</td></tr>
+          <tr><td><span class="badge" style="background:#22c5e8;color:#0f172a">WP</span></td><td>Workers' Party</td><td>The main opposition party. Won 10 seats (Aljunied, Sengkang, Hougang).</td></tr>
+          <tr><td><span class="badge" style="background:#e53935">PSP</span></td><td>Progress Singapore Party</td><td>Contested 6 constituencies, no seats.</td></tr>
+          <tr><td><span class="badge" style="background:#c2185b">SDP</span></td><td>Singapore Democratic Party</td><td>Contested 4 constituencies, no seats.</td></tr>
+          <tr><td><span class="badge" style="background:#7e57c2">RDU</span></td><td>Red Dot United</td><td>Contested 4 constituencies, no seats.</td></tr>
+          <tr><td><span class="badge" style="background:#8bc34a;color:#0f172a">SDA</span></td><td>Singapore Democratic Alliance</td><td>Contested Pasir Ris–Changi.</td></tr>
+          <tr><td><span class="badge" style="background:#2e7d32">SPP</span></td><td>Singapore People's Party</td><td>Contested 2 constituencies.</td></tr>
+          <tr><td><span class="badge" style="background:#f4c430;color:#0f172a">PAR</span></td><td>People's Alliance for Reform</td><td>Contested 6 constituencies.</td></tr>
+          <tr><td><span class="badge" style="background:#ff8a65;color:#0f172a">SUP</span> <span class="badge" style="background:#8d6e63">PPP</span> <span class="badge" style="background:#00897b">NSP</span></td><td>Singapore United Party, People's Power Party, National Solidarity Party</td><td>Smaller parties.</td></tr>
+          <tr><td><span class="badge" style="background:#78909c">IND</span></td><td>Independent</td><td>A candidate who doesn't belong to any party.</td></tr>
+        </tbody>
+      </table></div>
+      <p>You can also invent your own party in Step 2.</p>
+    </section>
+
+    <!-- ============================================================ TOUR -->
+    <section id="tour">
+      <h2>A tour of the screen</h2>
+      <p>When you open the simulator, you'll see the real GE2025 map. Each coloured patch is one constituency.</p>
+      <figure class="shot">
+        <div class="frame"><img src="/guide/01-overview.jpg" alt="The simulator's main screen showing the Singapore map coloured by constituency" loading="lazy" />
+          <span class="pin" style="left:24.3%;top:2.7%">1</span>
+          <span class="pin" style="left:73.6%;top:2.7%">2</span>
+          <span class="pin" style="left:41.7%;top:7.4%">3</span>
+          <span class="pin" style="left:36%;top:52%">4</span>
+          <span class="pin" style="left:3.5%;top:14%">5</span>
+          <span class="pin" style="left:71.4%;top:12%">6</span>
+        </div>
+        <figcaption><span class="title">The main screen</span>
+          <ol>
+            <li><b>Electors switch.</b> Use the 2025 voter numbers, or a projection of how many voters there will be by 2030 as new estates fill up.</li>
+            <li><b>Guide, Share link, Export and Import.</b> Open this guide, or save and share your work (see <a href="#share">Saving & sharing</a>).</li>
+            <li><b>The four step tabs.</b> Click any tab to switch step. You can also press <kbd>1</kbd>–<kbd>4</kbd> on your keyboard.</li>
+            <li><b>The map.</b> Each colour is one constituency, with thick black lines as boundaries. The thin white lines divide about 700 small "building blocks" that you can move between constituencies.</li>
+            <li><b>Zoom.</b> Use these buttons or your mouse scroll wheel to zoom in and out.</li>
+            <li><b>Side panel.</b> Shows the controls and numbers for the current step.</li>
+          </ol>
+        </figcaption>
+      </figure>
+      <div class="callout"><b>Pale areas on the map</b>Very light patches, like Jurong Island, the airport and the offshore islands, are places where nobody lives. They still belong to a constituency but have no voters.</div>
+    </section>
+
+    <!-- ============================================================ STEP 1 -->
+    <section id="step1">
+      <span class="step-tag">Step 1</span>
+      <h2 style="margin-top:4px;border:0">Draw boundaries</h2>
+      <p>In this step you act as the EBRC. You decide which neighbourhoods are grouped together, how many constituencies there are, and whether each one is an SMC or a GRC. If you'd rather keep the real 2025 map, skip to <a href="#step2">Step 2</a>.</p>
+      <p>The map starts as the <b>GE2025 boundaries</b>. To start from nothing, click <span class="ui">Blank map</span> at the top of the side panel. If you change your mind, <span class="ui">GE2025 boundaries</span> brings the real map back.</p>
+
+      <h3 id="step1-select">Look around: click a constituency</h3>
+      <p>Hover your mouse over any area to see a small information card. Click it to <b>select</b> its constituency. The selected constituency gets a yellow outline and its details appear in the side panel.</p>
+      <figure class="shot">
+        <div class="frame"><img src="/guide/02-select.jpg" alt="Sengkang GRC selected, with an information card and statistics" loading="lazy" />
+          <span class="pin" style="left:36.1%;top:47.8%">1</span>
+          <span class="pin" style="left:65.3%;top:52.2%">2</span>
+          <span class="pin" style="left:71.4%;top:16.1%">3</span>
+          <span class="pin" style="left:71.4%;top:20.4%">4</span>
+          <span class="pin" style="left:71.4%;top:27.4%">5</span>
+          <span class="pin" style="left:71.4%;top:35.3%">6</span>
+          <span class="pin" style="left:71.4%;top:46.7%">7</span>
+          <span class="pin" style="left:71.4%;top:63.3%">8</span>
+        </div>
+        <figcaption><span class="title">Sengkang GRC selected</span>
+          <ol>
+            <li><b>The selected constituency</b> is outlined in yellow.</li>
+            <li><b>Information card.</b> Shows the building block under your mouse: its neighbourhood name, how many voters live there, which constituency it's in now and was in for 2025, and how it voted in 2025.</li>
+            <li><b>Name and colour.</b> Type a new name or pick a new colour.</li>
+            <li><b>SMC or GRC</b>, and for a GRC, how many MPs (3–6).</li>
+            <li><b>Size check.</b> Electors is the total voters. Per MP is voters divided by MPs. vs quota shows how far that is from the national average: green is fine, amber is getting close to the limit, and red breaks the ±30% rule.</li>
+            <li><b>Notional GE2025 result.</b> How these voters voted in 2025. Here the WP won 56.3%, which matches the real result.</li>
+            <li><b>Who lives here.</b> The mix of ages, ethnic groups and housing types.</li>
+            <li><b>List of all constituencies.</b> Click any name to select it. Sort by <i>quota deviation</i> to find the least fair ones.</li>
+          </ol>
+        </figcaption>
+      </figure>
+
+      <h3 id="step1-tools">The drawing tools</h3>
+      <p>The <b>Tools</b> box in the side panel has six tools. Click one to choose it, or press its keyboard key.</p>
+      <div class="tools">
+        <div><b>➚ Select <kbd>V</kbd></b>Click an area to select its constituency. You can't change anything with this tool, so it's safe for exploring.</div>
+        <div><b>🖌 Paint <kbd>B</kbd></b>Click or drag over areas to move them into the <i>selected</i> constituency.</div>
+        <div><b>🪣 Fill <kbd>G</kbd></b>Click once to move a whole connected group of same-coloured areas into the selected constituency. Handy for merging two constituencies.</div>
+        <div><b>➰ Lasso <kbd>L</kbd></b>Hold the mouse button and draw a loop. Every area inside the loop joins the selected constituency.</div>
+        <div><b>⌫ Erase <kbd>E</kbd></b>Click or drag to take areas out of their constituency, leaving them unassigned.</div>
+        <div><b>✋ Pan <kbd>H</kbd></b>Drag to move the map around. With any other tool, hold <kbd>Space</kbd> and drag to move the map.</div>
+      </div>
+      <div class="callout"><b>Made a mistake?</b>Press the <span class="ui">↶</span> undo button (or <kbd>Ctrl</kbd>+<kbd>Z</kbd>) as many times as you like. <span class="ui">↷</span> (<kbd>Ctrl</kbd>+<kbd>Y</kbd>) redoes.</div>
+
+      <h3 id="step1-example">Worked example: create a new SMC</h3>
+      <p>Say you think western Sengkang should be its own single-MP constituency. Here's how:</p>
+      <ol class="steps">
+        <li>Scroll down the side panel to the constituency list and click <span class="ui">+ SMC</span>. A new, empty constituency called "New SMC 1" is created and selected, and the <b>Paint</b> tool turns on automatically.</li>
+        <li>Zoom into Sengkang and click (or drag) over the areas you want in the new seat. They turn the new constituency's colour straight away.</li>
+        <li>Rename it: click the name box and type "Sengkang West". You can also click the blue "Rename to …" suggestion, which uses the main neighbourhood names.</li>
+        <li>Check the <b>vs quota</b> number. Aim for green, somewhere between about −15% and +15% for a good, fair seat.</li>
+      </ol>
+      <figure class="shot">
+        <div class="frame"><img src="/guide/03-paint.jpg" alt="A new orange SMC called Sengkang West painted onto the map" loading="lazy" />
+          <span class="pin" style="left:80.6%;top:24.7%">1</span>
+          <span class="pin" style="left:37.8%;top:43.9%">2</span>
+          <span class="pin" style="left:93.4%;top:21.6%">3</span>
+          <span class="pin" style="left:71.4%;top:51%">4</span>
+          <span class="pin" style="left:71.4%;top:63.7%">5</span>
+        </div>
+        <figcaption><span class="title">Painting a new SMC</span>
+          <ol>
+            <li><b>Paint tool</b> is switched on (highlighted).</li>
+            <li><b>The new SMC</b> (orange) now covers western Sengkang. The rest of Sengkang GRC (green) got smaller.</li>
+            <li><b>Undo</b> is now available if you want to take it back.</li>
+            <li><b>Checks</b> updates straight away. Adding an SMC made 98 seats instead of 97, which is fine; it's just information.</li>
+            <li>The <b>selected constituency</b> is now "Sengkang West".</li>
+          </ol>
+        </figcaption>
+      </figure>
+      <figure class="shot">
+        <div class="frame"><img src="/guide/04-new-smc.jpg" alt="The statistics card of the new Sengkang West SMC" loading="lazy" />
+          <span class="pin" style="left:71.4%;top:16.1%">1</span>
+          <span class="pin" style="left:71.4%;top:23.1%">2</span>
+          <span class="pin" style="left:71.4%;top:30%">3</span>
+          <span class="pin" style="left:90.3%;top:26.4%">4</span>
+          <span class="pin" style="left:71.4%;top:37.8%">5</span>
+          <span class="pin" style="left:71.4%;top:60.7%">6</span>
+          <span class="pin" style="left:89.6%;top:66%">7</span>
+        </div>
+        <figcaption><span class="title">The new SMC's numbers</span>
+          <ol>
+            <li><b>Name</b>, with a suggested name underneath.</li>
+            <li><b>SMC / GRC switch.</b> Click GRC to turn it into a team constituency, then choose 3–6 MPs.</li>
+            <li><b>27,207 electors</b> in 5 building blocks.</li>
+            <li><b>−3.4% vs quota</b>, in green, so this is a nicely sized seat.</li>
+            <li><b>Notional 2025 result:</b> WP 56.4%. These voters leaned to the WP in 2025, so it would be a close seat to watch.</li>
+            <li><b>Drawn from:</b> which 2025 constituencies these voters came from (here, all from Sengkang).</li>
+            <li><span class="ui">+ SMC</span> and <span class="ui">+ GRC</span> buttons to add more constituencies.</li>
+          </ol>
+        </figcaption>
+      </figure>
+
+      <h3 id="step1-lasso">Using the lasso for big areas</h3>
+      <p>Painting block by block is slow for large areas. Use the <b>Lasso</b> instead. Select the constituency you want to add to (or create a new one with <span class="ui">+ GRC</span>), choose the lasso, then hold down the mouse button and draw a loop around the areas. Let go, and everything inside the loop joins the constituency.</p>
+      <figure class="shot">
+        <div class="frame"><img src="/guide/05-lasso.jpg" alt="Drawing a lasso loop around northern Punggol" loading="lazy" />
+          <span class="pin" style="left:89.6%;top:24.7%">1</span>
+          <span class="pin" style="left:48.6%;top:22.8%">2</span>
+          <span class="pin" style="left:71.4%;top:57.2%">3</span>
+          <span class="pin" style="left:71.4%;top:66.3%">4</span>
+        </div>
+        <figcaption><span class="title">Drawing a lasso</span>
+          <ol>
+            <li><b>Lasso tool</b> selected.</li>
+            <li><b>The loop being drawn</b> (dotted yellow) around northern Punggol.</li>
+            <li><b>Checks</b> warns that the new GRC is still empty. That's expected until you finish the loop.</li>
+            <li><b>The new GRC, "Punggol North"</b>, waiting for areas.</li>
+          </ol>
+        </figcaption>
+      </figure>
+      <figure class="shot">
+        <div class="frame"><img src="/guide/06-lasso-done.jpg" alt="The lasso result: a new red Punggol North GRC that is too small for 4 MPs" loading="lazy" />
+          <span class="pin" style="left:43%;top:33.3%">1</span>
+          <span class="pin" style="left:90.4%;top:23.1%">2</span>
+          <span class="pin" style="left:90.3%;top:26.4%">3</span>
+        </div>
+        <figcaption><span class="title">After letting go</span>
+          <ol>
+            <li><b>All the areas inside the loop</b> are now in "Punggol North" (red).</li>
+            <li>It's a <b>GRC with 4 MPs</b>…</li>
+            <li>…but it only has 57,765 voters, which is <b>−46.6%</b> vs quota and shown in red. 4 MPs would each represent far fewer people than average. To fix it, lasso in more areas or lower the number of MPs.</li>
+          </ol>
+        </figcaption>
+      </figure>
+
+      <h3 id="step1-checks">Fixing problems: the Checks box</h3>
+      <p>The <b>Checks</b> box makes sure your map follows the rules. <b style="color:#ef4444">✖ Errors</b> break a rule. <b style="color:#d97706">▲ Warnings</b> are allowed but worth a look. Click any message to jump to the constituency it's about.</p>
+      <figure class="shot">
+        <div class="frame"><img src="/guide/07-checks.jpg" alt="The Checks box listing errors after some areas were erased" loading="lazy" />
+          <span class="pin" style="left:90.6%;top:12.6%">1</span>
+          <span class="pin" style="left:71.4%;top:20.1%">2</span>
+          <span class="pin" style="left:48.6%;top:36.7%">3</span>
+          <span class="pin" style="left:90.3%;top:42.2%">4</span>
+        </div>
+        <figcaption><span class="title">A map with problems</span>
+          <ol>
+            <li><b>Summary:</b> 2 errors and 1 warning.</li>
+            <li><b>The messages.</b> Some neighbourhoods belong to no constituency. Punggol is now far too small for 4 MPs. It's also split into separate pieces ("not contiguous").</li>
+            <li><b>White areas</b> are unassigned, meaning nobody would represent these voters. Paint them into a constituency to fix this.</li>
+            <li>Punggol's <b>−52.6%</b> shows in red.</li>
+          </ol>
+        </figcaption>
+      </figure>
+      <p>The rules checked are:</p>
+      <ul>
+        <li><b>Every populated area</b> must belong to a constituency.</li>
+        <li><b>At least 8 SMCs</b>, as required by Singapore's Constitution.</li>
+        <li><b>GRCs have 3 to 6 MPs.</b></li>
+        <li><b>Electors per MP within ±30%</b> of the national average, the rule the EBRC follows. You can make this stricter in the <b>Rules</b> box at the bottom of the panel.</li>
+        <li><b>Each constituency is in one piece</b>. This is a warning only; uninhabited islands don't count.</li>
+      </ul>
+      <div class="callout"><b>You don't have to fix everything</b>The simulator still runs an election on a map with errors. Fixing them just makes your map more realistic.</div>
+
+      <h3 id="step1-lens">Map lenses: see who lives where</h3>
+      <p>The <b>Map lens</b> buttons recolour the map to show facts about each neighbourhood. They help you draw smarter boundaries. For example, you can see where young voters live, or which areas voted most strongly for the opposition in 2025.</p>
+      <figure class="shot">
+        <div class="frame"><img src="/guide/08-lens.jpg" alt="The Young voters lens: darker blue areas have more voters aged 21 to 34" loading="lazy" />
+          <span class="pin" style="left:71.4%;top:15.6%">1</span>
+          <span class="pin" style="left:71.4%;top:21.7%">2</span>
+          <span class="pin" style="left:92.4%;top:12.6%">3</span>
+          <span class="pin" style="left:36.8%;top:36.7%">4</span>
+        </div>
+        <figcaption><span class="title">The "Young voters" lens</span>
+          <ol>
+            <li><b>Lens buttons.</b> <i>Constituencies</i> is the normal view. <i>Elector quota</i> shows which seats are too big (blue) or too small (red). <i>GE2025 PAP vote</i> shows how each area voted. The others show age, ethnicity, housing and population density.</li>
+            <li><b>Colour key.</b> Pale means few, dark means many.</li>
+            <li><b>GE2025 lines</b> tick box: draws the real 2025 boundaries as red dashed lines, so you can compare your map.</li>
+            <li><b>Darker areas</b> have more voters aged 21–34, often newer estates.</li>
+          </ol>
+        </figcaption>
+      </figure>
+      <div class="callout"><b>2025 or 2030 voters?</b>The <span class="ui">2025 register</span> / <span class="ui">2030 projection</span> switch at the top changes the voter numbers everywhere. The 2030 projection adds about 115,000 extra voters, mostly in estates still filling up, such as Tengah. A seat that is a fair size today may be too big by 2030.</div>
+      <div class="next"><a href="#tour">← Tour</a><a href="#step2">Next: Contests →</a></div>
+    </section>
+
+    <!-- ============================================================ STEP 2 -->
+    <section id="step2">
+      <span class="step-tag">Step 2</span>
+      <h2 style="margin-top:4px;border:0">Contests: who stands where</h2>
+      <p>Now decide which parties put up candidates in each constituency. You don't have to start from scratch: the simulator fills in sensible <b>defaults</b>. Each seat gets the PAP against the opposition party that fought for most of those voters in 2025. Unchanged 2025 constituencies keep their exact 2025 line-up.</p>
+      <figure class="shot">
+        <div class="frame"><img src="/guide/09-contests.jpg" alt="The Contests tab, with the map coloured by the main challenger in each seat" loading="lazy" />
+          <span class="pin" style="left:71.4%;top:20%">1</span>
+          <span class="pin" style="left:71.4%;top:24.7%">2</span>
+          <span class="pin" style="left:71.4%;top:34.6%">3</span>
+          <span class="pin" style="left:48.6%;top:50%">4</span>
+          <span class="pin" style="left:31.6%;top:93.7%">5</span>
+        </div>
+        <figcaption><span class="title">The Contests tab</span>
+          <ol>
+            <li><b>Reset to defaults</b> undoes your changes. <b>Straight fights only</b> removes extra parties so each seat is a two-way race.</li>
+            <li><b>Seats contested</b> by each party across the country.</li>
+            <li><b>Every constituency</b> with badges for the parties standing there. Click one to open it.</li>
+            <li><b>The map</b> is coloured by the <i>main challenger</i> in each seat. For example, light blue areas are where the WP takes on the PAP.</li>
+            <li><b>Colour key.</b> Grey means a walkover.</li>
+          </ol>
+        </figcaption>
+      </figure>
+      <h3>Changing a line-up</h3>
+      <ol class="steps">
+        <li>Click a constituency in the list (or on the map) to open it.</li>
+        <li>Click party badges to <b>add</b> them (the badge fills in) or <b>remove</b> them (the badge goes hollow). Add a third party to create a three-cornered fight. Leave only one party to create a walkover.</li>
+        <li>Optionally use the <b>candidate effect</b> sliders. Move one to the right if a party is fielding a well-known or popular candidate there. This adds that many percentage points to their vote. A negative number means an unpopular candidate.</li>
+      </ol>
+      <figure class="shot">
+        <div class="frame"><img src="/guide/10-contest-detail.jpg" alt="East Coast GRC opened in the Contests tab showing party badges and candidate sliders" loading="lazy" />
+          <span class="pin" style="left:71.5%;top:18.2%">1</span>
+          <span class="pin" style="left:71.5%;top:24.4%">2</span>
+          <span class="pin" style="left:71.5%;top:35.6%">3</span>
+        </div>
+        <figcaption><span class="title">East Coast GRC opened</span>
+          <ol>
+            <li><b>East Coast GRC</b>, a 5-MP team seat, currently PAP vs WP.</li>
+            <li><b>All parties.</b> Filled badges are standing; hollow ones are not. Click to switch.</li>
+            <li><b>Candidate effect</b> sliders for each party standing.</li>
+          </ol>
+        </figcaption>
+      </figure>
+      <h3>Party strength and new parties</h3>
+      <p>At the bottom of the Contests panel, the <b>Party strength</b> sliders say how strong each opposition party is. It is set from how well each party did in 2025, with WP at 1.0. A stronger party gets more votes when it stands somewhere new, and takes more of the opposition vote in multi-party fights. You can also <b>add your own party</b>: give it a short code (like "NEW"), a name and a colour, then add it to seats like any other party.</p>
+      <div class="next"><a href="#step1">← Draw boundaries</a><a href="#step3">Next: Swings & forecast →</a></div>
+    </section>
+
+    <!-- ============================================================ STEP 3 -->
+    <section id="step3">
+      <span class="step-tag">Step 3</span>
+      <h2 style="margin-top:4px;border:0">Swings & forecast: how will people vote?</h2>
+      <p>This is where you make your prediction. The starting point is always <b>how people voted in 2025</b>. You then say how things will change. The forecast at the top updates instantly as you move any slider.</p>
+      <figure class="shot">
+        <div class="frame"><img src="/guide/11-forecast.jpg" alt="The forecast tab with a 4.3 point swing against the PAP" loading="lazy" />
+          <span class="pin" style="left:71.4%;top:15.1%">1</span>
+          <span class="pin" style="left:71.4%;top:21.1%">2</span>
+          <span class="pin" style="left:71.4%;top:26.9%">3</span>
+          <span class="pin" style="left:71.4%;top:36.9%">4</span>
+          <span class="pin" style="left:71.4%;top:48.6%">5</span>
+          <span class="pin" style="left:71.4%;top:62.2%">6</span>
+          <span class="pin" style="left:45%;top:49%">7</span>
+          <span class="pin" style="left:13.9%;top:93.7%">8</span>
+        </div>
+        <figcaption><span class="title">The "GE2020 mood" scenario: PAP down 4.3 points</span>
+          <ol>
+            <li><b>Projected Parliament.</b> Each party's share of seats. The <b>white line</b> marks a majority and the <b>faint line</b> marks two-thirds.</li>
+            <li><b>Seat totals and the popular vote.</b> Here: PAP 80, WP 17, SDP 1.</li>
+            <li><b>Run election night</b> takes you to Step 4. <b>2,000 simulations</b> tests how certain the forecast is (see below).</li>
+            <li><b>Scenarios</b>: one-click ready-made predictions. Try them to see how they work, then fine-tune.</li>
+            <li><b>National swing:</b> the most important slider (explained below).</li>
+            <li><b>Party swings:</b> make one party do better or worse.</li>
+            <li><b>The map</b> colours each seat by its projected winner. <b>Paler colours mean closer races.</b></li>
+            <li><b>Colour key.</b></li>
+          </ol>
+        </figcaption>
+      </figure>
+
+      <h3 id="step3-swings">The five kinds of swing, explained</h3>
+      <p>All swings are in <b>percentage points (pp)</b>. Positive numbers move votes <b>towards the PAP</b>; negative numbers move votes <b>towards the opposition</b>. Double-click any slider to reset it to zero.</p>
+      <dl class="terms">
+        <div><dt>1. National swing</dt><dd>Every seat moves by the same amount. <i>−5 means the PAP loses 5 points everywhere, e.g. 60% → 55%.</i> For reference, the PAP's national vote went from 61.2% in 2020 to 65.6% in 2025, a swing of about +4.3 towards the PAP.</dd></div>
+        <div><dt>2. Party swing</dt><dd>One opposition party does better or worse wherever it stands. <i>"WP +3" gives the WP 3 extra points in every seat it contests, taken from the PAP.</i></dd></div>
+        <div><dt>3. Demographic swing</dt><dd>A group of voters changes its mind, such as young voters, Malay voters or people in 4-room HDB flats. Each seat is affected <b>according to how many of those voters live there</b>. <i>"Young voters −6" hurts the PAP most in estates full of young families.</i></dd></div>
+        <div><dt>4. Constituency swing</dt><dd>A change in one seat only, e.g. because of a local issue or a star candidate. Select the seat on the map or in the table, then use the slider in the <b>Constituency swing</b> box.</dd></div>
+        <div><dt>5. Turnout change</dt><dd>More or fewer people voting. It has only a small effect on who wins.</dd></div>
+      </dl>
+      <figure class="shot">
+        <div class="frame"><img src="/guide/13-demographic.jpg" alt="Demographic swing sliders, with young voters set to minus 6" loading="lazy" />
+          <span class="pin" style="left:71.5%;top:20.6%">1</span>
+          <span class="pin" style="left:71.5%;top:42.2%">2</span>
+          <span class="pin" style="left:71.5%;top:64.4%">3</span>
+          <span class="pin" style="left:71.5%;top:96%">4</span>
+        </div>
+        <figcaption><span class="title">Demographic swing sliders</span>
+          <ol>
+            <li><b>Age groups.</b> Here voters aged 21–34 swing 6 points towards the opposition. Notice more of the map's north-east turning light blue.</li>
+            <li><b>Ethnic groups.</b></li>
+            <li><b>Housing type</b>, from small HDB flats to landed houses.</li>
+            <li><b>Constituency swing</b> for the currently selected seat.</li>
+          </ol>
+        </figcaption>
+      </figure>
+      <p>Below the sliders, the <b>Seats, closest first</b> table lists every constituency, starting with the most marginal. Seats won by less than 5 points are highlighted. These are the ones to watch on election night.</p>
+
+      <h3 id="step3-sims">2,000 simulations: how sure is the forecast?</h3>
+      <p>Real elections have surprises: polls are off and individual seats behave unexpectedly. Click <span class="ui">🎲 2,000 simulations</span> and the simulator reruns your election 2,000 times, each with random surprises. Then it tells you how often each result happened.</p>
+      <figure class="shot">
+        <div class="frame"><img src="/guide/12-simulations.jpg" alt="Simulation results: probability the PAP keeps its majority and a histogram of PAP seats" loading="lazy" />
+          <span class="pin" style="left:71.5%;top:18.9%">1</span>
+          <span class="pin" style="left:71.5%;top:23.9%">2</span>
+          <span class="pin" style="left:71.5%;top:32.2%">3</span>
+        </div>
+        <figcaption><span class="title">Simulation results</span>
+          <ol>
+            <li><b>Chances:</b> PAP keeps its majority in 100% of runs and its two-thirds majority in 98.2%.</li>
+            <li><b>Bar chart</b> of how many seats the PAP won across all 2,000 runs. Taller bars are more likely outcomes.</li>
+            <li><b>Likely range</b> for each party. "WP 17 seats (90%: 11–27)" means the WP won between 11 and 27 seats in 9 out of 10 runs.</li>
+          </ol>
+        </figcaption>
+      </figure>
+      <p>The size of the surprises is set in the <b>Uncertainty</b> box near the bottom. <i>National polling error</i> is how far off your whole prediction could be. <i>Seat-level noise</i> is how much individual seats can surprise. After running the simulations, a <b>Prob</b> column appears in the table showing each seat's chance of going to the projected winner.</p>
+      <div class="next"><a href="#step2">← Contests</a><a href="#step4">Next: Election night →</a></div>
+    </section>
+
+    <!-- ============================================================ STEP 4 -->
+    <section id="step4">
+      <span class="step-tag">Step 4</span>
+      <h2 style="margin-top:4px;border:0">Election night</h2>
+      <p>The fun part. Polls close at 8pm and you watch the results come in, just like on TV.</p>
+      <figure class="shot">
+        <div class="frame"><img src="/guide/14-night-start.jpg" alt="Election night start screen with two modes and a start button" loading="lazy" />
+          <span class="pin" style="left:71.5%;top:25.6%">1</span>
+          <span class="pin" style="left:71.5%;top:32.7%">2</span>
+          <span class="pin" style="left:71.5%;top:38.9%">3</span>
+        </div>
+        <figcaption><span class="title">Choose how the night plays out</span>
+          <ol>
+            <li><b>Realistic night</b> (recommended): your forecast plus random surprises, so every night is different and upsets can happen.</li>
+            <li><b>Exactly my forecast:</b> results match Step 3 exactly, with no surprises.</li>
+            <li><b>Start the count.</b></li>
+          </ol>
+        </figcaption>
+      </figure>
+      <h3>What happens during the night</h3>
+      <ol class="steps">
+        <li><b>~10:30pm – sample counts.</b> Early estimates arrive for each constituency and the map shows a faint tint of the leading party. They're usually right, but can be a few points off.</li>
+        <li><b>~11:30pm onwards – official results.</b> Each constituency is declared one by one. Small SMCs come first and big GRCs come in the early morning. The map fills in with the winner's colour.</li>
+        <li><b>The call.</b> As soon as a party passes the majority line, a banner announces it.</li>
+        <li><b>The end.</b> A final summary shows seats, vote shares, which seats changed hands, and any NCMP seats offered.</li>
+      </ol>
+      <figure class="shot">
+        <div class="frame"><img src="/guide/15-night-live.jpg" alt="Election night in progress at 1:13am with 9 seats declared" loading="lazy" />
+          <span class="pin" style="left:23.4%;top:13%">1</span>
+          <span class="pin" style="left:92.7%;top:12.9%">2</span>
+          <span class="pin" style="left:71.5%;top:16.9%">3</span>
+          <span class="pin" style="left:71.5%;top:21.1%">4</span>
+          <span class="pin" style="left:71.5%;top:28.7%">5</span>
+          <span class="pin" style="left:71.5%;top:41.1%">6</span>
+          <span class="pin" style="left:36.1%;top:41.7%">7</span>
+          <span class="pin" style="left:26.4%;top:33.3%">8</span>
+        </div>
+        <figcaption><span class="title">1:13am: results coming in</span>
+          <ol>
+            <li><b>Scoreboard:</b> the time, seats won so far, and seats still to declare.</li>
+            <li><b>Clock.</b></li>
+            <li><b>Controls:</b> <span class="ui">Play/Pause</span>, <span class="ui">Next</span> jumps to the next announcement, <span class="ui">1× 3× 10×</span> set the speed, and <span class="ui">Skip</span> jumps to the final result.</li>
+            <li><b>Seats declared</b> so far.</li>
+            <li><b>Vote share</b> of all votes counted so far.</li>
+            <li><b>Announcements</b>, newest at the top. Each shows the vote shares, the number of votes and the turnout. A yellow <b>"SDP GAIN from PAP"</b> tag, like on Sembawang West here, means the seat changed hands compared with how those voters voted in 2025.</li>
+            <li><b>Declared seats</b> show in full colour.</li>
+            <li><b>Grey or faintly tinted seats</b> are still counting.</li>
+          </ol>
+        </figcaption>
+      </figure>
+      <figure class="shot">
+        <div class="frame"><img src="/guide/16-night-result.jpg" alt="The final result: PAP forms the government with 76 of 98 seats" loading="lazy" />
+          <span class="pin" style="left:21.9%;top:17.6%">1</span>
+          <span class="pin" style="left:71.5%;top:17.8%">2</span>
+          <span class="pin" style="left:71.5%;top:25.6%">3</span>
+          <span class="pin" style="left:71.5%;top:62.8%">4</span>
+          <span class="pin" style="left:71.5%;top:75%">5</span>
+        </div>
+        <figcaption><span class="title">The final result</span>
+          <ol>
+            <li><b>The call:</b> "PAP wins a majority".</li>
+            <li><b>Verdict:</b> who forms the government and whether they kept two-thirds.</li>
+            <li><b>Results table:</b> seats and national vote share for every party. <b>vs 2025</b> shows the change from the real 2025 result (green = up, red = down). If any NCMP seats are offered, they appear as "+2N" and in a list below.</li>
+            <li><b>Changing hands:</b> every seat won by a different party than in 2025.</li>
+            <li><b>Announcements:</b> scroll down to see every result from the night.</li>
+          </ol>
+        </figcaption>
+      </figure>
+      <figure class="shot">
+        <div class="frame"><img src="/guide/17-night-map.jpg" alt="The final election night map zoomed on the east, coloured by winning party" loading="lazy" />
+          <span class="pin" style="left:29.9%;top:52.2%">1</span>
+          <span class="pin" style="left:48.6%;top:55.6%">2</span>
+          <span class="pin" style="left:13.9%;top:55.6%">3</span>
+          <span class="pin" style="left:5.2%;top:15.6%">4</span>
+        </div>
+        <figcaption><span class="title">Reading the results map</span>
+          <ol>
+            <li><b>Strong light blue:</b> a comfortable WP win (Aljunied).</li>
+            <li><b>Pale light blue:</b> a narrow WP win (Tampines). The paler the colour, the closer the race.</li>
+            <li><b>Dark navy:</b> safe PAP seats. Paler navy means closer PAP wins.</li>
+            <li><b>Pink:</b> an SDP win in Sembawang West.</li>
+          </ol>
+        </figcaption>
+      </figure>
+      <div class="callout"><b>Hover for details</b>Move your mouse over any declared constituency to see its full result. Press <span class="ui">↻ New election night</span> at the bottom of the panel to replay with a fresh set of surprises.</div>
+      <div class="next"><a href="#step3">← Swings & forecast</a><a href="#share">Next: Saving & sharing →</a></div>
+    </section>
+
+    <!-- ============================================================ SHARE -->
+    <section id="share">
+      <h2>Saving & sharing your prediction</h2>
+      <ul>
+        <li><b>Autosave:</b> your map, contests and swings are saved automatically in your browser. Close the tab and they'll still be there next time, on the same computer and browser.</li>
+        <li><b>🔗 Share link:</b> copies a web link containing your whole prediction. Send it to friends; when they open it, they see exactly your map, line-ups and swings.</li>
+        <li><b>⬇ Export:</b> downloads your prediction as a small file (<code>ge2030-map.json</code>). Keep it as a backup, or to try different versions.</li>
+        <li><b>⬆ Import:</b> loads an exported file back in.</li>
+      </ul>
+      <div class="callout warn"><b>Starting over</b>Clicking <span class="ui">GE2025 boundaries</span> or <span class="ui">Blank map</span> replaces your current map. You can undo it, but export first if you want a permanent copy.</div>
+    </section>
+
+    <!-- ============================================================ FAQ -->
+    <section id="faq">
+      <h2>Tips & FAQ</h2>
+      <details open><summary>Is this a real prediction of GE2030?</summary><p>No. It's a tool for exploring "what if" scenarios, for fun and learning. The results only reflect the choices you make. It isn't affiliated with the Elections Department or any political party.</p></details>
+      <details><summary>Where do the numbers come from?</summary><p>Official public data. Boundaries, 2025 results and voter numbers come from the Elections Department (ELD). Neighbourhood boundaries and land use come from the Urban Redevelopment Authority (URA). Age, ethnicity and housing come from the 2020 Census by the Department of Statistics. All are published on data.gov.sg. Every 2025 constituency adds up to its exact official number of voters.</p></details>
+      <details><summary>How accurate are the numbers for each small area?</summary><p>They are careful estimates. Official figures are only published for whole constituencies, so the simulator spreads each constituency's voters across its neighbourhoods using census and housing data. Totals per 2025 constituency are exact; individual blocks are close approximations.</p></details>
+      <details><summary>If I don't change anything, do I get the real 2025 result?</summary><p>Yes. With the 2025 map, default contests and all swings at zero, the forecast reproduces the real GE2025 result: PAP 87 seats, WP 10. Every contested constituency's vote share is within a fraction of a percent.</p></details>
+      <details><summary>Why does Marine Parade–Braddell Heights show a contest?</summary><p>In 2025 it was a walkover, so nobody actually voted there. For 2030 the simulator assumes the WP will contest it (the WP had planned to in 2025). Its starting vote (about 62% PAP) is an estimate, because there's no real 2025 result to use. To keep it a walkover, remove WP in Step 2.</p></details>
+      <details><summary>Why can't I get exactly 97 seats?</summary><p>You can! Seats = number of SMCs + MPs in each GRC. Adjust GRC sizes (3–6) or add and remove constituencies until the total matches. Parliament can also change size between elections, so any total is allowed. The count is shown as information only.</p></details>
+      <details><summary>Why is part of my map pale or white?</summary><p><b>Pale</b> areas have no voters: industrial land, the airport, nature reserves and offshore islands. <b>White</b> areas are populated places that aren't in any constituency yet. The Checks box will flag them.</p></details>
+      <details><summary>My mouse drags the map instead of painting (or the other way round)</summary><p>With Paint, Erase or Lasso selected, dragging draws. To move the map instead, hold <kbd>Space</kbd> while dragging, switch to the Pan tool (<kbd>H</kbd>), or use the scroll wheel to zoom.</p></details>
+      <details><summary>Does it work on a phone?</summary><p>Yes. The map sits on top and the controls below. Drawing boundaries is easier with a mouse on a bigger screen, but forecasting and election night work well on phones.</p></details>
+      <details><summary>Keyboard shortcuts</summary><p><kbd>1</kbd>–<kbd>4</kbd> switch tabs. <kbd>V</kbd> Select, <kbd>B</kbd> Paint, <kbd>G</kbd> Fill, <kbd>L</kbd> Lasso, <kbd>E</kbd> Erase, <kbd>H</kbd> Pan. <kbd>Space</kbd> (hold) pans the map. <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes and <kbd>Ctrl</kbd>+<kbd>Y</kbd> redoes.</p></details>
+      <p style="margin-top:28px"><a class="open-app" href="./" style="display:inline-block">Open the simulator and try it →</a></p>
+    </section>
+
+    <footer>
+      GE2030 Simulator: an unofficial fan project for exploring Singapore's electoral system. Data: Elections Department, URA and SingStat via data.gov.sg (Singapore Open Data Licence). Map © OpenFreeMap, © OpenStreetMap contributors.
+    </footer>
+  </main>
+</div>
+
+<div class="lightbox" id="lightbox" role="dialog" aria-label="Enlarged screenshot"></div>
+
+<script>
+  // enlarge screenshots (with their numbered markers) on click
+  const lb = document.getElementById('lightbox')
+  document.querySelectorAll('figure.shot .frame').forEach((f) => {
+    f.addEventListener('click', () => {
+      lb.innerHTML = ''
+      const copy = f.cloneNode(true)
+      copy.querySelector('img').removeAttribute('loading')
+      lb.appendChild(copy)
+      lb.classList.add('open')
+    })
+  })
+  lb.addEventListener('click', () => lb.classList.remove('open'))
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') lb.classList.remove('open') })
+
+  // mobile contents menu
+  const toc = document.getElementById('toc')
+  const btn = document.getElementById('menuBtn')
+  btn.addEventListener('click', () => {
+    const open = toc.classList.toggle('open')
+    btn.setAttribute('aria-expanded', String(open))
+  })
+  toc.addEventListener('click', (e) => { if (e.target.tagName === 'A') { toc.classList.remove('open'); btn.setAttribute('aria-expanded', 'false') } })
+
+  // highlight the current section in the contents
+  const links = [...toc.querySelectorAll('a')]
+  const targets = links.map((a) => document.querySelector(a.getAttribute('href'))).filter(Boolean)
+  const setActive = () => {
+    let current = targets[0]
+    for (const t of targets) if (t.getBoundingClientRect().top < 120) current = t
+    links.forEach((a) => a.classList.toggle('active', a.getAttribute('href') === '#' + current.id))
+  }
+  document.addEventListener('scroll', setActive, { passive: true })
+  setActive()
+</script>
+</body>
+</html>

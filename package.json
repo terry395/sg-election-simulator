@@ -6,6 +6,7 @@
   "scripts": {
     "fetch-data": "node pipeline/fetch.mjs",
     "data": "node --max-old-space-size=8192 pipeline/build.mjs",
+    "guide:shots": "node scripts/guide-shots.mjs",
     "test": "vitest run",
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -36,6 +37,7 @@
     "@vitejs/plugin-react": "^6.1.1",
     "d3-delaunay": "^6.0.4",
     "oxlint": "^1.81.0",
+    "playwright": "^1.63.0",
     "polyclip-ts": "^0.16.8",
     "tailwindcss": "^4.3.3",
     "topojson-server": "^3.0.1",

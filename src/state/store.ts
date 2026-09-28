@@ -195,3 +195,6 @@ export const useStore = create<State>((set, get) => ({
       future: [],
     })),
 }))
+
+// dev-only handle for scripted testing and guide screenshots
+if (import.meta.env.DEV) (window as unknown as { __store: typeof useStore }).__store = useStore

@@ -13,6 +13,8 @@ import { decodeState, encodeState, type SharedState } from './share/serialize'
 import { DEFAULT_PARTIES } from './data/parties'
 
 const STORAGE_KEY = 'sg-election-sim:v1'
+const GUIDE_SEEN_KEY = 'sg-election-sim:guide-seen'
+const GUIDE_URL = import.meta.env.BASE_URL + 'guide.html'
 
 export default function App() {
   const data = useStore((s) => s.data)
@@ -88,6 +90,7 @@ function Shell() {
   return (
     <div className="flex h-full flex-col">
       <Header />
+      <WelcomeBanner />
       <nav className="flex shrink-0 gap-1 overflow-x-auto border-b border-slate-800 bg-slate-950 px-3">
         {TABS.map((t) => (
           <button key={t.id} onClick={() => setTab(t.id)}
@@ -157,6 +160,25 @@ function useAutosave() {
   }, [plan, contestOverrides, swings, year, parties])
 }
 
+/** One-time invitation to read the beginner guide. */
+function WelcomeBanner() {
+  const [show, setShow] = useState(() => {
+    try { return !localStorage.getItem(GUIDE_SEEN_KEY) } catch { return false }
+  })
+  if (!show) return null
+  const dismiss = () => {
+    try { localStorage.setItem(GUIDE_SEEN_KEY, '1') } catch { /* ignore */ }
+    setShow(false)
+  }
+  return (
+    <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-rose-900/60 bg-rose-950/60 px-4 py-2 text-sm">
+      <span>👋 New here? Read the <b>5-minute beginner guide</b>: it explains every button and every election term in plain English.</span>
+      <a href={GUIDE_URL} target="_blank" rel="noopener" onClick={dismiss} className="rounded-md bg-rose-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-rose-500">Open the guide →</a>
+      <button onClick={dismiss} className="ml-auto text-xs text-slate-400 hover:text-slate-200">Dismiss ✕</button>
+    </div>
+  )
+}
+
 function Header() {
   const year = useStore((s) => s.year)
   const setYear = useStore((s) => s.setYear)
@@ -212,6 +234,7 @@ function Header() {
       </div>
       <div className="ml-auto flex items-center gap-1.5">
         {msg && <span className="text-xs text-emerald-300">{msg}</span>}
+        <a href={GUIDE_URL} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 rounded-md border border-rose-500/70 bg-rose-600/15 px-2.5 py-1.5 text-xs font-medium text-rose-100 hover:bg-rose-600/30" title="Step-by-step beginner guide">📖 Guide</a>
         <Button onClick={share} title="Copy a link containing your map, contests and swings">🔗 Share link</Button>
         <Button onClick={exportJson}>⬇ Export</Button>
         <Button onClick={() => fileRef.current?.click()}>⬆ Import</Button>

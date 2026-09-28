@@ -72,3 +72,5 @@ export const useNight = create<NightState>((set, get) => ({
   },
   reset: () => set({ result: null, plan: null, events: [], t: -5, cursor: 0, revealed: {}, playing: false }),
 }))
+
+if (import.meta.env.DEV) (window as unknown as { __night: typeof useNight }).__night = useNight

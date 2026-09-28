@@ -53,6 +53,7 @@ export function MapView() {
     map.touchZoomRotate.disableRotation()
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left')
     mapRef.current = map
+    if (import.meta.env.DEV) (window as unknown as { __map: maplibregl.Map }).__map = map
     let fellBack = false
     map.on('error', (e) => {
       // basemap unreachable (offline): fall back to a plain background so the simulator still works
@@ -169,7 +170,8 @@ export function MapView() {
     const onMove = (e: MapMouseEvent) => {
       const id = blockAt(e)
       setHoverState(id)
-      setHover(id === null ? null : { id, x: e.point.x, y: e.point.y })
+      // the info card would cover what you are drawing
+      setHover(id === null || painting ? null : { id, x: e.point.x, y: e.point.y })
       if (!painting) return
       if (tool === 'lasso') {
         lasso.push([e.lngLat.lng, e.lngLat.lat])
