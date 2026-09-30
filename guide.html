@@ -224,7 +224,7 @@
         <div><dt>Swing</dt><dd>How much a party's vote share goes up or down compared with last time. It is measured in <b>percentage points ("pp")</b>. <i>If PAP got 60% last time and 55% this time, that's a 5-point swing away from PAP.</i></dd></div>
         <div><dt>Turnout</dt><dd>The percentage of electors who actually voted. It is usually about 92–94% in Singapore because voting is compulsory.</dd></div>
         <div><dt>Notional result</dt><dd>A "what-if" result. If you draw a new constituency, it didn't exist in 2025, so the simulator works out how the people inside it voted in 2025. That estimate is the notional result.</dd></div>
-        <div><dt>Sample count</dt><dd>An early estimate released on election night, before the full count is finished. Officials count a random sample of ballots from each polling station. It is usually accurate to within about 4 percentage points.</dd></div>
+        <div><dt>Sample count</dt><dd>An early estimate released on election night, before the full count is finished. Officials count a random sample of ballots from each polling station. It is usually accurate to within about 4 percentage points. The simulator adds them up live in the Sample counts chart.</dd></div>
         <div><dt>Recount</dt><dd>If the winner beats the runner-up by 2% or less, the candidates can ask for the votes to be counted again.</dd></div>
         <div><dt>NCMP (Non-Constituency MP)</dt><dd>Singapore guarantees at least 12 opposition voices in Parliament. If fewer than 12 opposition MPs win seats, the best-performing losing opposition candidates are offered extra seats as NCMPs, provided they won at least 15% of the vote in their constituency.</dd></div>
         <div><dt>Incumbent / anchor minister</dt><dd>The MP who currently holds the seat. An "anchor minister" is a senior government minister leading a GRC team; they often attract extra votes.</dd></div>
@@ -283,6 +283,7 @@
           <span class="pin" style="left:3.5%;top:14%">5</span>
           <span class="pin" style="left:71.4%;top:12%">6</span>
           <span class="pin" style="left:71.4%;top:21.1%">7</span>
+          <span class="pin" style="left:8.5%;top:20.3%">8</span>
         </div>
         <figcaption><span class="title">The main screen</span>
           <ol>
@@ -293,6 +294,7 @@
             <li><b>Zoom.</b> Use these buttons or your mouse scroll wheel to zoom in and out.</li>
             <li><b>Side panel.</b> Shows the controls and numbers for the current step.</li>
             <li><b><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg> Auto-draw.</b> Let the computer redraw the whole map for you (see <a href="#step1-auto">Auto-draw</a>).</li>
+            <li><b>Map / Satellite.</b> Switch the background to satellite photos to see the real rooftops, parks and water under the colours (see <a href="#satellite">Satellite view</a>). It works on every tab, and the simulator remembers your choice.</li>
           </ol>
         </figcaption>
       </figure>
@@ -579,7 +581,7 @@
       <ol class="steps">
         <li>Click a constituency in the list (or on the map) to open it.</li>
         <li>Click party badges to <b>add</b> them (the badge fills in) or <b>remove</b> them (the badge goes hollow). Add a third party to create a three-cornered fight. Leave only one party to create a walkover.</li>
-        <li>Choose each party's <b>anchor leader</b>: the person who leads the team in a GRC, or the candidate in an SMC (see below).</li>
+        <li>Choose each party's <b>anchor leader</b> from the dropdown: the person who leads the team in a GRC, or the candidate in an SMC (see below).</li>
       </ol>
       <figure class="shot">
         <div class="frame"><img src="/guide/10-contest-detail.jpg" alt="East Coast GRC opened in the Contests tab with anchor leaders" loading="lazy" />
@@ -594,7 +596,7 @@
             <li><b>East Coast GRC</b>, a 5-MP team seat, PAP vs WP. The small line underneath shows each party's anchor leader.</li>
             <li><b>All parties.</b> Filled badges are standing; hollow ones are not. Click to switch.</li>
             <li><b>PAP anchor:</b> filled in automatically with the 2025 anchor for these voters (Edwin Tong, Minister for Law).</li>
-            <li><b>WP anchor changed to Pritam Singh.</b> His role appears underneath, and the leader effect was set to <b>+2</b> automatically because he is better known than the 2025 WP anchor here.</li>
+            <li><b>WP anchor changed to Pritam Singh</b>, picked from the dropdown. His role appears underneath, and the leader effect was set to <b>+2</b> automatically because he is better known than the 2025 WP anchor here.</li>
             <li>Other seats show their leaders at a glance, e.g. "WP: Dennis Tan · PAP: Marshall Lim".</li>
           </ol>
         </figcaption>
@@ -602,8 +604,9 @@
       <h3 id="leaders">Anchor leaders</h3>
       <p>Every party team has a <b>leader</b>. In a GRC it's the team's anchor, often a minister or a party chief; in an SMC it's simply the candidate. For each party in an opened seat:</p>
       <ul>
-        <li><b>Pick a real person:</b> click the box to choose from that party's actual GE2025 candidates. Well-known figures, such as the Prime Minister, ministers and party leaders, are listed first with their role.</li>
-        <li><b>Or type any name.</b> This is handy for smaller parties, new faces, or a party you created.</li>
+        <li><b>Pick a real person:</b> tap the dropdown to choose from that party's actual GE2025 candidates. <b>Well-known</b> figures, such as the Prime Minister, ministers and party leaders, are listed first with their role. Everyone else follows, grouped by the constituency they stood in at GE2025. On a phone, this opens your phone's own easy-to-scroll picker.</li>
+        <li><b>Or choose "Custom name…"</b> at the bottom of the list. A text box appears where you can type any name. This is handy for new faces, smaller parties or a party you created. A party with no GE2025 candidates, such as one you invented, just shows the text box.</li>
+        <li><b>No leader:</b> choose "— No anchor leader —" at the top of the list, or press the <b>×</b> next to it.</li>
         <li><b>Leader effect:</b> the simulator suggests how many extra points a leader brings <i>compared with the 2025 anchor for those voters</i>. For example, the Prime Minister is worth about +3 points, a minister +1.5 and a party leader +1 to +2. Moving a big name to a new seat helps there, and the seat they leave behind loses that boost. The slider is only a suggestion; set it to whatever you believe.</li>
       </ul>
       <p>Leaders appear throughout the night: "WP team led by … GAIN from PAP", in the results list, and when you hover over the map.</p>
@@ -712,40 +715,66 @@
       </figure>
       <h3>What happens during the night</h3>
       <ol class="steps">
-        <li><b>~10:30pm – sample counts.</b> Early estimates arrive for each constituency and the map shows a faint tint of the leading party. They're usually right, but can be a few points off.</li>
+        <li><b>~10:30pm – sample counts.</b> Early estimates arrive for each constituency and the map shows a faint tint of the leading party. The <b>Sample counts chart</b> adds up how many seats each party leads so far. They're usually right, but can be a few points off.</li>
         <li><b>The parliament chart fills up.</b> Every seat is a dot. Empty rings are seats still being counted, and each dot pops into a party's colour as its result is declared.</li>
         <li><b>~11:30pm onwards – official results.</b> Each constituency is declared one by one. Small SMCs come first and big GRCs come in the early morning. The map fills in with the winner's colour.</li>
         <li><b>The call.</b> As soon as a party passes the majority line, a banner announces it.</li>
-        <li><b>The end.</b> A final summary shows seats, vote shares, which seats changed hands, and any NCMP seats offered.</li>
+        <li><b>The end.</b> A final summary shows seats, votes and vote shares, which seats changed hands, and any NCMP seats offered.</li>
       </ol>
       <figure class="shot">
-        <div class="frame"><img src="/guide/15-night-live.jpg" alt="Election night in progress at 1:13am with 9 seats declared" loading="lazy" />
-          <span class="pin" style="left:23.4%;top:13%">1</span>
+        <div class="frame"><img src="/guide/22-night-samples.jpg" alt="Sample counts arriving at 11:16pm: the Sample counts chart shows PAP leading in 34 seats, WP in 7 and SDP in 1, with 42 of 98 seats sampled" loading="lazy" />
+          <span class="pin" style="left:71.5%;top:49.7%">1</span>
+          <span class="pin" style="left:73.3%;top:56%">2</span>
+          <span class="pin" style="left:83.5%;top:58.5%">3</span>
+          <span class="pin" style="left:73%;top:61.5%">4</span>
+          <span class="pin" style="left:54%;top:49%">5</span>
+          <span class="pin" style="left:71.5%;top:71%">6</span>
+        </div>
+        <figcaption><span class="title">11:16pm: sample counts arriving, nothing declared yet</span>
+          <ol>
+            <li><b>Sample counts chart.</b> "42 of 98 contested seats sampled" means early estimates are in for constituencies worth 42 seats so far.</li>
+            <li><b>One bar per party:</b> the seats where that party is ahead on its sample count. A 5-member GRC counts as 5 seats. Here: PAP 34, WP 7, SDP 1.</li>
+            <li><b>The white line</b> marks a majority. A party whose bar crosses it would win the election <i>if the samples are right</i>.</li>
+            <li><b>Striped parts</b> (see the key under the chart) are "close" seats, where the lead is under 4 points. That's within the sample count's margin of error, so those seats could still go either way.</li>
+            <li><b>A faint tint on the map</b> shows the party leading the sample count in that seat.</li>
+            <li><b>Sample count announcements.</b> A news flash warns when a seat is too close to call.</li>
+          </ol>
+        </figcaption>
+      </figure>
+      <p>The Sample counts chart keeps its tally even after the official results come in. Once the night is over, compare it with the real seat bar above to see how good the samples were.</p>
+      <figure class="shot">
+        <div class="frame"><img src="/guide/15-night-live.jpg" alt="Election night in progress at 1:05am with 8 seats declared" loading="lazy" />
+          <span class="pin" style="left:25%;top:13%">1</span>
           <span class="pin" style="left:92.7%;top:12.9%">2</span>
           <span class="pin" style="left:71.5%;top:16.9%">3</span>
           <span class="pin" style="left:71.5%;top:30%">4</span>
           <span class="pin" style="left:71.5%;top:42.7%">5</span>
-          <span class="pin" style="left:71.5%;top:50.2%">6</span>
-          <span class="pin" style="left:71.5%;top:62.2%">7</span>
-          <span class="pin" style="left:36.1%;top:41.7%">8</span>
-          <span class="pin" style="left:26.4%;top:33.3%">9</span>
-          <span class="pin" style="left:51.5%;top:77.8%">10</span>
+          <span class="pin" style="left:71.5%;top:51.3%">6</span>
+          <span class="pin" style="left:71.5%;top:67%">7</span>
+          <span class="pin" style="left:71.5%;top:77.1%">8</span>
+          <span class="pin" style="left:36.1%;top:41.7%">9</span>
+          <span class="pin" style="left:26.4%;top:33.3%">10</span>
+          <span class="pin" style="left:51.5%;top:77.8%">11</span>
+          <span class="pin" style="left:97.6%;top:16.9%">12</span>
         </div>
-        <figcaption><span class="title">1:13am: results coming in</span>
+        <figcaption><span class="title">1:05am: results coming in</span>
           <ol>
-            <li><b>Scoreboard:</b> the time, seats won so far, and seats still to declare.</li>
+            <li><b>Scoreboard:</b> the time, seats won so far, seats still to declare, and a speaker button to mute the music.</li>
             <li><b>Clock.</b></li>
             <li><b>Controls:</b> <span class="ui">Play/Pause</span>, <span class="ui">Next</span> jumps to the next announcement, <span class="ui">1× 3× 10×</span> set the speed, and <span class="ui">Skip</span> jumps to the final result.</li>
             <li><b>Live parliament chart.</b> Filled dots are declared seats, empty rings are still counting, and the big number is the leading party's seats.</li>
             <li><b>Seats declared</b> as a bar, with the majority line.</li>
-            <li><b>Vote share</b> of all votes counted so far.</li>
-            <li><b>Announcements</b>, newest at the top, with who was elected and who they defeated. A yellow <b>"SDP GAIN from PAP"</b> tag, like on Sembawang West here, means the seat changed hands compared with how those voters voted in 2025.</li>
+            <li><b>Sample counts chart:</b> by now every seat has been sampled. Compare it with the declared seats above as results arrive.</li>
+            <li><b>Votes counted so far</b> for each party, with their share, e.g. "PSP 31,346 (17.0%)".</li>
+            <li><b>Announcements</b>, newest at the top, with who was elected, who they defeated, and each party's votes. A yellow <b>"GAIN from …"</b> tag means the seat changed hands compared with how those voters voted in 2025.</li>
             <li><b>Declared seats</b> show in full colour.</li>
             <li><b>Grey or faintly tinted seats</b> are still counting.</li>
             <li><b>A second parliament chart on the map</b>, so you can watch the map and the chart together.</li>
+            <li><b>Mute</b> <span class="ui"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.364 18.364a9 9 0 0 0 0-12.728"/></svg></span> turns the election-night music off or on (see below).</li>
           </ol>
         </figcaption>
       </figure>
+      <div class="callout"><b>Election-night music</b>While the count runs, a newsroom-style theme plays, with a short brass sting for breaking news and projections, and a flourish when the last result is in. The music is made by your browser as it plays, so nothing is downloaded. It stops when you pause. Press the speaker button in the panel, or on the scoreboard over the map, to mute it. The simulator remembers your choice for next time.</div>
       <figure class="shot">
         <div class="frame"><img src="/guide/16-night-result.jpg" alt="The final result: PAP forms the government with 76 of 98 seats" loading="lazy" />
           <span class="pin" style="left:35.4%;top:23.6%">1</span>
@@ -759,7 +788,7 @@
           <ol>
             <li><b>The call:</b> "PAP wins a majority". Just above it, the latest news flash from the night.</li>
             <li><b>Verdict:</b> who forms the government and whether they kept two-thirds.</li>
-            <li><b>Results table:</b> seats and national vote share for every party. <b>vs 2025</b> shows the change from the real 2025 result (green = up, red = down). If any NCMP seats are offered, they appear as "+2N" and in a list below.</li>
+            <li><b>Results table:</b> seats, total votes and national vote share for every party, e.g. "WP 21 seats, 450,884 votes, 17.9%". <b>vs 2025</b> shows the change from the real 2025 result (green = up, red = down). If any NCMP seats are offered, they appear as "+2N" and in a list below.</li>
             <li><b>Changing hands:</b> every seat won by a different party than in 2025, with the winning team's leader. The amber note above it is a reminder that this is a simulation you made, not a poll.</li>
             <li><b>Announcements:</b> scroll down to see every result from the night. Occasional <b>news flashes</b> (Breaking, Projection, Analysis) are mixed in: the first result, seats changing hands, photo finishes, the moment a party wins a majority, and a final round-up. The latest flash also appears briefly across the top of the map.</li>
             <li><b>The finished parliament.</b> If any NCMP seats are offered, they appear as coloured rings underneath the chart.</li>
@@ -781,6 +810,20 @@
             <li><b>Dark navy:</b> safe PAP seats. Paler navy means closer PAP wins.</li>
             <li><b>Pink:</b> an SDP win in Sembawang West.</li>
             <li><b>The final parliament</b> (76 PAP, 21 WP, 1 SDP). The pink dot is the SDP seat.</li>
+          </ol>
+        </figcaption>
+      </figure>
+      <figure class="shot" id="satellite">
+        <div class="frame"><img src="/guide/23-satellite.jpg" alt="The same results map drawn over satellite imagery, with Paya Lebar Air Base and Changi Airport visible through the colours" loading="lazy" />
+          <span class="pin" style="left:8.5%;top:20.3%">1</span>
+          <span class="pin" style="left:40%;top:54%">2</span>
+          <span class="pin" style="left:36%;top:94.8%">3</span>
+        </div>
+        <figcaption><span class="title">Satellite view</span>
+          <ol>
+            <li><b>Map / Satellite switch</b>, under the zoom buttons on every tab. The simulator remembers your choice.</li>
+            <li><b>The colours turn see-through</b> so you can see what's underneath: here the Paya Lebar Air Base runway shows through the WP-won seats in the middle, and Changi Airport lies to the east. Boundaries, labels and colours work exactly as on the street map.</li>
+            <li><b>Credit</b> for the satellite photos.</li>
           </ol>
         </figcaption>
       </figure>
@@ -824,14 +867,14 @@
       <details><summary>Why can't I get exactly 97 seats?</summary><p>You can! Seats = number of SMCs + MPs in each GRC. Adjust GRC sizes (3–6) or add and remove constituencies until the total matches. Parliament can also change size between elections, so any total is allowed. The count is shown as information only.</p></details>
       <details><summary>Why is part of my map pale or white?</summary><p><b>Pale</b> areas have no voters: industrial land, the airport, nature reserves and offshore islands. <b>White</b> areas are populated places that aren't in any constituency yet. The Checks box will flag them.</p></details>
       <details><summary>My mouse drags the map instead of painting (or the other way round)</summary><p>With Paint, Erase or Lasso selected, dragging draws. To move the map instead, hold <kbd>Space</kbd> while dragging, switch to the Pan tool (<kbd>H</kbd>), or use the scroll wheel to zoom.</p></details>
-      <details><summary>Does it work on a phone?</summary><p>Yes. The map sits on top and the controls below. Drawing boundaries is easier with a mouse on a bigger screen, but forecasting and election night work well on phones.</p></details>
+      <details><summary>Does it work on a phone?</summary><p>Yes. The map sits on top and the controls below. Drawing boundaries is easier with a mouse on a bigger screen, but forecasting and election night work well on phones. Choosing anchor leaders uses your phone's own picker, so there's no typing.</p></details>
       <details><summary>Keyboard shortcuts</summary><p><kbd>1</kbd>–<kbd>4</kbd> switch tabs. <kbd>V</kbd> Select, <kbd>B</kbd> Paint, <kbd>G</kbd> Fill, <kbd>L</kbd> Lasso, <kbd>E</kbd> Erase, <kbd>H</kbd> Pan. <kbd>Space</kbd> (hold) pans the map. <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes and <kbd>Ctrl</kbd>+<kbd>Y</kbd> redoes.</p></details>
       <p style="margin-top:28px"><a class="open-app" href="./" style="display:inline-flex">Open the simulator and try it <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a></p>
     </section>
 
     <footer>
       <p><b>Disclaimer.</b> This simulator does not represent any real-life polling, survey or official projection. No user data is recorded: nothing you do is sent to a server, and your work is saved only in your own browser. It is intended purely for entertainment and educational purposes, and is not affiliated with the Elections Department or any political party.</p>
-      GE2030 Simulator: an unofficial fan project for exploring Singapore's electoral system. Data: Elections Department, URA and SingStat via data.gov.sg (Singapore Open Data Licence). Map © OpenFreeMap, © OpenStreetMap contributors.
+      GE2030 Simulator: an unofficial fan project for exploring Singapore's electoral system. Data: Elections Department, URA and SingStat via data.gov.sg (Singapore Open Data Licence). Map © OpenFreeMap, © OpenStreetMap contributors. Satellite imagery © Esri, Maxar, Earthstar Geographics.
     </footer>
   </main>
 </div>

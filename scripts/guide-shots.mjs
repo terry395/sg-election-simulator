@@ -174,7 +174,7 @@ await run(() => {
   a.scrollTop = li.offsetTop - a.offsetTop - 60
 })
 // pick Pritam Singh as the WP anchor to show the leader effect
-await page.getByLabel('WP anchor leader').fill('Pritam Singh')
+await page.getByLabel('WP anchor leader').selectOption('Pritam Singh')
 await sleep(300)
 await run(() => {
   const li = [...document.querySelectorAll('aside li')].find((l) => l.textContent.startsWith('East Coast'))
@@ -225,11 +225,25 @@ await page.locator('text=Exactly my forecast').click()
 await run(() => { Math.random = () => 0.1234 }) // fixed running order
 await clickText('Polls close')
 await run(() => { Math.random = window.__realRandom })
+
+// 22 sample counts arriving (about half in), nothing declared yet
 await run(() => {
   const n = window.__night.getState()
   n.setPlaying(false)
+  const samples = n.events.flatMap((e, i) => (e.kind === 'sample' ? [i] : []))
+  const target = samples[Math.floor(samples.length / 2)]
+  window.__steps = 0
+  while (window.__night.getState().cursor < target) { window.__night.getState().stepNext(); window.__steps++ }
+})
+await idle()
+await scrollPanelTo(null)
+await shot('22-night-samples')
+
+await run(() => {
+  const n = window.__night.getState()
   const target = n.events.findIndex((e) => e.kind === 'result') + 9
-  for (let i = 0; i < target; i++) window.__night.getState().stepNext()
+  // same number of steps from the start as before shot 22 was added, so the guide's numbers stay put
+  for (let i = window.__steps; i < target; i++) window.__night.getState().stepNext()
 })
 await idle()
 await scrollPanelTo(null)
@@ -246,6 +260,12 @@ await view([103.9, 1.36], 11.6)
 await idle()
 await scrollPanelTo(null)
 await shot('17-night-map')
+
+// 23 the same map over satellite imagery
+await run(() => window.__store.getState().setBasemap('satellite'))
+await idle()
+await shot('23-satellite')
+await run(() => window.__store.getState().setBasemap('map'))
 
 // 18 auto-draw: method picker (EBRC-style selected by default)
 await run(() => {

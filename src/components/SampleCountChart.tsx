@@ -26,7 +26,7 @@ export function SampleCountChart({ tally, total, parties }: { tally: SampleTally
               </div>
               <div className="absolute inset-y-0 w-0.5 bg-white/80" style={{ left: x(majority) }} title={`Majority: ${majority}`} />
             </div>
-            <span className="tabular w-24 shrink-0 text-right text-slate-300"><b>{t.seats}</b> seats{t.close ? <span className="text-slate-500"> ({t.close} close)</span> : ''}</span>
+            <span className="tabular w-24 shrink-0 text-right text-slate-300"><b>{t.seats}</b> seat{t.seats === 1 ? '' : 's'}{t.close ? <span className="text-slate-500"> ({t.close} close)</span> : ''}</span>
           </div>
         ))}
       </div>
