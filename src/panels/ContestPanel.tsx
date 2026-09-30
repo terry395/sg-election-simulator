@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { useStore } from '../state/store'
 import { useDerived } from '../state/derived'
 import { Button, PartyBadge, Section, Slider, pct } from '../components/ui'
 import { PAP } from '../data/parties'
 import type { Contest } from '../types'
-import { candidatesByParty, leaderBonus, leaderRole } from '../data/candidates'
+import { candidatesByParty, leaderBonus, leaderRole, type Candidate } from '../data/candidates'
 import { defaultLeaders } from '../model/contests'
 import { X } from 'lucide-react'
 
@@ -20,6 +20,8 @@ export function ContestPanel() {
   const ge = useStore((s) => s.data)!.ge
   const candidates = useMemo(() => candidatesByParty(ge), [ge])
   const [filter, setFilter] = useState('')
+  /** `${cid}:${party}` pairs where the user chose to type a custom name */
+  const [customKeys, setCustomKeys] = useState<Set<string>>(() => new Set())
 
   const oppCount = new Set(Object.values(contests).flatMap((c) => c.parties.filter((p) => p !== PAP))).size
   const contested = Object.values(contests).filter((c) => c.parties.length > 1).length
@@ -94,13 +96,10 @@ export function ContestPanel() {
                       const hasList = (candidates[p]?.length ?? 0) > 0
                       return (
                         <div key={p} className="mt-1.5 rounded-md border border-slate-800 p-1.5">
-                          <div className="flex items-center gap-1.5">
-                            {partyMap[p] && <PartyBadge party={partyMap[p]} small />}
-                            <input list={hasList ? `cands-${p}` : undefined} value={name} onChange={(e) => setLeader(p, e.target.value)}
-                              placeholder={hasList ? 'Pick a GE2025 candidate or type a name' : 'Type your candidate’s name'}
-                              className="min-w-0 flex-1 rounded border border-slate-700 bg-slate-950 px-1.5 py-0.5 text-xs" aria-label={`${p} anchor leader`} />
-                            {name && <button className="text-[10px] text-slate-500 hover:text-slate-300" onClick={() => setLeader(p, '')} title="Clear" aria-label="Clear"><X size={12} /></button>}
-                          </div>
+                          <LeaderPicker party={p} name={name} list={candidates[p] ?? []} badge={partyMap[p] && <PartyBadge party={partyMap[p]} small />}
+                            custom={!hasList || customKeys.has(`${c.id}:${p}`) || (!!name && !candidates[p]?.some((x) => x.name === name))}
+                            setCustom={(v) => setCustomKeys((s) => { const n = new Set(s); if (v) n.add(`${c.id}:${p}`); else n.delete(`${c.id}:${p}`); return n })}
+                            onChange={(v) => setLeader(p, v)} />
                           {role && <div className="mt-0.5 text-[10px] text-sky-300">{role}</div>}
                           <Slider label={<span className="text-slate-400">Leader effect vs 2025 <span className="text-slate-500">(auto-set from the leader; adjust freely)</span></span>}
                             value={ct.star?.[p] ?? 0} min={-8} max={8} step={0.5}
@@ -114,13 +113,61 @@ export function ContestPanel() {
             )
           })}
         </ul>
-        {Object.entries(candidates).map(([p, list]) => (
-          <datalist key={p} id={`cands-${p}`}>
-            {list.map((cnd, i) => <option key={i} value={cnd.name}>{cnd.role ? `${cnd.role} · ` : ''}GE2025 {cnd.edName}</option>)}
-          </datalist>
-        ))}
       </Section>
       <PartyEditor />
+    </div>
+  )
+}
+
+const CUSTOM = '__custom'
+
+/** Native select of GE2025 candidates (easy on phones), with a free-text fallback for anyone else. */
+function LeaderPicker({ party, name, list, badge, custom, setCustom, onChange }: {
+  party: string; name: string; list: Candidate[]; badge: ReactNode; custom: boolean
+  setCustom: (v: boolean) => void; onChange: (name: string) => void
+}) {
+  const notable = list.filter((x) => x.role)
+  const byEd = new Map<string, Candidate[]>()
+  for (const x of list) if (!x.role) byEd.set(x.edName, [...(byEd.get(x.edName) ?? []), x])
+  const eds = [...byEd.keys()].sort((a, b) => a.localeCompare(b))
+  const clear = name ? <button className="text-[10px] text-slate-500 hover:text-slate-300" onClick={() => { setCustom(false); onChange('') }} title="Clear" aria-label="Clear"><X size={12} /></button> : null
+  return (
+    <div>
+      <div className="flex items-center gap-1.5">
+        {badge}
+        {list.length > 0 && (
+          <select value={custom ? CUSTOM : name} aria-label={`${party} anchor leader`}
+            onChange={(e) => {
+              const v = e.target.value
+              if (v === CUSTOM) { setCustom(true); return }
+              setCustom(false)
+              onChange(v)
+            }}
+            className="min-w-0 flex-1 rounded border border-slate-700 bg-slate-950 px-1.5 py-1 text-xs">
+            <option value="">— No anchor leader —</option>
+            {notable.length > 0 && (
+              <optgroup label="Well-known">
+                {notable.map((x) => <option key={`${x.name}-${x.edId}`} value={x.name}>{x.name} — {x.role}</option>)}
+              </optgroup>
+            )}
+            {eds.map((ed) => (
+              <optgroup key={ed} label={`GE2025 ${ed}`}>
+                {byEd.get(ed)!.map((x) => <option key={`${x.name}-${x.edId}`} value={x.name}>{x.name}</option>)}
+              </optgroup>
+            ))}
+            <option value={CUSTOM}>Custom name…</option>
+          </select>
+        )}
+        {list.length === 0 && (
+          <input value={name} onChange={(e) => onChange(e.target.value)} placeholder="Type your candidate’s name"
+            className="min-w-0 flex-1 rounded border border-slate-700 bg-slate-950 px-1.5 py-1 text-xs" aria-label={`${party} anchor leader`} />
+        )}
+        {clear}
+      </div>
+      {list.length > 0 && custom && (
+        <input value={name} onChange={(e) => onChange(e.target.value)} placeholder="Type your candidate’s name" autoFocus={!name}
+          className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-1.5 py-1 text-xs" aria-label={`${party} custom anchor leader`} />
+      )}
     </div>
   )
 }

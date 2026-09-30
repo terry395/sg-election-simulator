@@ -193,6 +193,38 @@ function buildNews(plan: Constituency[], result: ElectionResult, ev: NightEvent[
   return out
 }
 
+/** Sample counts are accurate to within this margin (ELD's stated ±4 points at 95% confidence). */
+export const SAMPLE_MARGIN = 0.04
+
+export interface SampleTally {
+  /** party → seats it leads on sample count; `close` of those are within SAMPLE_MARGIN */
+  byParty: Record<string, { seats: number; close: number }>
+  /** seats with a sample count released */
+  sampled: number
+  /** seats that will get a sample count (everything but walkovers) */
+  contested: number
+}
+
+/** What the sample counts released so far say about the seats, ignoring official results. */
+export function tallySamples(events: NightEvent[], cursor: number, plan: Constituency[]): SampleTally {
+  const seatsOf = new Map(plan.map((c) => [c.id, c.seats]))
+  const byParty: SampleTally['byParty'] = {}
+  let sampled = 0
+  let contested = 0
+  events.forEach((e, i) => {
+    if (e.kind !== 'sample') return
+    const n = seatsOf.get(e.cid) ?? 0
+    contested += n
+    if (i >= cursor) return
+    const [[p1, v1], [, v2] = ['', 0]] = Object.entries(e.shares).sort((a, b) => b[1] - a[1])
+    const t = (byParty[p1] ||= { seats: 0, close: 0 })
+    t.seats += n
+    if (v1 - v2 < SAMPLE_MARGIN) t.close += n
+    sampled += n
+  })
+  return { byParty, sampled, contested }
+}
+
 export const clock = (t: number) => {
   const m = Math.round(POLLS_CLOSE + t) % (24 * 60)
   const h = Math.floor(m / 60)

@@ -9,6 +9,8 @@ import type { SharedState } from '../share/serialize'
 
 export type Tab = 'draw' | 'contests' | 'forecast' | 'night'
 export type Tool = 'paint' | 'fill' | 'lasso' | 'erase' | 'pan' | 'inspect'
+export type Basemap = 'map' | 'satellite'
+const BASEMAP_KEY = 'sg-election-sim:basemap'
 export type Lens = 'constituency' | 'deviation' | 'pap' | 'young' | 'senior' | 'malay' | 'indian' | 'landed' | 'condo' | 'density'
 
 interface Snapshot { constituencies: Constituency[]; assign: (string | null)[] }
@@ -21,6 +23,7 @@ interface State {
   lens: Lens
   year: Year
   showGE2025: boolean
+  basemap: Basemap
   rules: Rules
   plan: Plan
   past: Snapshot[]
@@ -44,6 +47,7 @@ interface State {
   setLens: (l: Lens) => void
   setYear: (y: Year) => void
   setShowGE2025: (v: boolean) => void
+  setBasemap: (b: Basemap) => void
   setRules: (r: Partial<Rules>) => void
   setActive: (id: string | null) => void
   setHoverBlock: (id: number | null) => void
@@ -85,6 +89,7 @@ export const useStore = create<State>((set, get) => ({
   lens: 'constituency',
   year: 2025,
   showGE2025: false,
+  basemap: (() => { try { return localStorage.getItem(BASEMAP_KEY) === 'satellite' ? 'satellite' : 'map' } catch { return 'map' } })(),
   rules: DEFAULT_RULES,
   plan: { constituencies: [], assign: [] },
   past: [],
@@ -110,6 +115,10 @@ export const useStore = create<State>((set, get) => ({
   setLens: (lens) => set({ lens }),
   setYear: (year) => set({ year }),
   setShowGE2025: (showGE2025) => set({ showGE2025 }),
+  setBasemap: (basemap) => {
+    try { localStorage.setItem(BASEMAP_KEY, basemap) } catch { /* ignore */ }
+    set({ basemap })
+  },
   setRules: (r) => set({ rules: { ...get().rules, ...r } }),
   setActive: (activeId) => set({ activeId }),
   setHoverBlock: (hoverBlock) => set({ hoverBlock }),

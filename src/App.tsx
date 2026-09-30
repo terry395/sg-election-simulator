@@ -335,7 +335,7 @@ function About({ onClose }: { onClose: () => void }) {
           <li>Elections Department: Electoral Boundary 2025, GE results by candidate, registered electors (data.gov.sg)</li>
           <li>URA: Master Plan 2019 Subzone Boundary and Land Use layer (data.gov.sg)</li>
           <li>SingStat: Census of Population 2020, residents by subzone, age, ethnicity and dwelling type (data.gov.sg)</li>
-          <li>Basemap © OpenFreeMap, © OpenStreetMap contributors</li>
+          <li>Basemap © OpenFreeMap, © OpenStreetMap contributors; satellite imagery © Esri, Maxar, Earthstar Geographics</li>
         </ul>
         <p className="mt-3 text-xs text-slate-500">Block-level electors and vote shares are modelled estimates; official figures exist only at polling-district or constituency level. Contains information from data.gov.sg accessed under the Singapore Open Data Licence.</p>
       </div>

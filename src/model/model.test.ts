@@ -8,7 +8,7 @@ import { defaultContests } from './contests'
 import { DEFAULT_SWINGS, allocateNcmp, projectSeat, runElection } from './swing'
 import { validate, DEFAULT_RULES } from './validation'
 import { monteCarlo } from './montecarlo'
-import { buildTimeline } from './timeline'
+import { buildTimeline, tallySamples } from './timeline'
 import { decodeState, encodeState } from '../share/serialize'
 
 const dir = path.join(__dirname, '../../public/data')
@@ -106,6 +106,20 @@ describe('simulation', () => {
     const ev = buildTimeline(plan.constituencies, res, 1)
     expect(ev.filter((e) => e.kind === 'result' || e.kind === 'walkover').length).toBe(plan.constituencies.length)
     expect(ev.at(-1)!.kind).toBe('ncmp')
+  })
+  it('sample tally counts only released samples and ends covering every contested seat', () => {
+    const res = runElection(plan.constituencies, stats.byId, contests, DEFAULT_SWINGS, parties)
+    const ev = buildTimeline(plan.constituencies, res, 5)
+    const contested = plan.constituencies.filter((_, i) => !res.seats[i].walkover).reduce((s, c) => s + c.seats, 0)
+    const none = tallySamples(ev, 0, plan.constituencies)
+    expect(none.sampled).toBe(0)
+    expect(none.contested).toBe(contested)
+    const all = tallySamples(ev, ev.length, plan.constituencies)
+    expect(all.sampled).toBe(contested)
+    expect(Object.values(all.byParty).reduce((s, t) => s + t.seats, 0)).toBe(contested)
+    for (const t of Object.values(all.byParty)) expect(t.close).toBeLessThanOrEqual(t.seats)
+    const firstSample = ev.findIndex((e) => e.kind === 'sample')
+    expect(tallySamples(ev, firstSample + 1, plan.constituencies).sampled).toBeGreaterThan(0)
   })
   it('news flashes are occasional, ordered and reproducible', () => {
     const res = runElection(plan.constituencies, stats.byId, contests, { ...DEFAULT_SWINGS, national: -8 }, parties)

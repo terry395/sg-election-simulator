@@ -3,13 +3,15 @@ import { useStore } from '../state/store'
 import { useDerived } from '../state/derived'
 import { useNight } from '../state/night'
 import { Button, PartyBadge, Section, ShareBar, Swatch, pct, fmt } from '../components/ui'
-import { FastForward, Info, Newspaper, Pause, Play, RotateCcw, SkipForward } from 'lucide-react'
+import { FastForward, Info, Newspaper, Pause, Play, RotateCcw, SkipForward, Volume2, VolumeX } from 'lucide-react'
 import { CoalitionBuilder } from '../components/CoalitionBuilder'
 import { coalitionName, isHung, majorityOf } from '../model/coalition'
 import { DISCLAIMER_SHORT } from '../data/disclaimer'
 import { SeatBar } from '../components/SeatBar'
 import { Hemicycle } from '../components/Hemicycle'
-import { buildTimeline, clock, type NewsTag, type NightEvent } from '../model/timeline'
+import { buildTimeline, clock, tallySamples, type NewsTag, type NightEvent } from '../model/timeline'
+import { SampleCountChart } from '../components/SampleCountChart'
+import { nightMusic, useMusic } from '../audio/nightMusic'
 import { runElection, type SeatResult } from '../model/swing'
 import { rng } from '../model/rng'
 import { PAP } from '../data/parties'
@@ -54,6 +56,7 @@ export function NightPanel() {
 
   const ge = useStore((s) => s.data)!.ge
   const start = () => {
+    nightMusic.unlock()
     const seed = Math.floor(Math.random() * 1e9)
     const result = mode === 'projection' ? projection : runElection(plan.constituencies, stats.byId, contests, swings, partyMap, rng(seed))
     const news = {
@@ -118,11 +121,13 @@ function NightLive({ onRestart }: { onRestart: () => void }) {
   const byId = useMemo(() => Object.fromEntries(plan.map((c, i) => [c.id, { c, r: result.seats[i] }])), [plan, result])
   const fired = night.events.slice(0, night.cursor).filter((e) => e.kind !== 'ncmp').reverse()
   const ge = useStore((s) => s.data)!.ge
+  const samples = useMemo(() => tallySamples(night.events, night.cursor, plan), [night.events, night.cursor, plan])
+  useNightMusic()
 
   return (
     <div>
       <Section title="Live" right={<span className="tabular text-lg font-bold text-rose-400">{night.t < 0 ? '8:00 pm' : clock(night.t)}</span>}>
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <Button variant={night.playing ? 'subtle' : 'primary'} onClick={() => night.setPlaying(!night.playing)} disabled={done}>{night.playing ? <><Pause size={14} aria-hidden /> Pause</> : <><Play size={14} aria-hidden /> Play</>}</Button>
           <Button onClick={night.stepNext} disabled={done} title="Next announcement"><SkipForward size={14} aria-hidden /> Next</Button>
           <div className="flex overflow-hidden rounded-md border border-slate-700">
@@ -131,6 +136,7 @@ function NightLive({ onRestart }: { onRestart: () => void }) {
             ))}
           </div>
           <Button onClick={night.skipToEnd} disabled={done} title="Skip to the end">Skip <FastForward size={14} aria-hidden /></Button>
+          <MuteButton className="ml-auto" />
         </div>
         <div className="mt-3 flex justify-center">
           <Hemicycle seats={d.seats} total={d.total} parties={partyMap} ncmp={done ? night.result!.ncmp : undefined} width={330} government={night.coalition ?? undefined} />
@@ -139,11 +145,16 @@ function NightLive({ onRestart }: { onRestart: () => void }) {
           <SeatBar seats={d.seats} total={d.total} parties={partyMap} />
           <div className="mt-1 text-[11px] text-slate-400">{d.declared} of {d.total} seats declared</div>
         </div>
+        {samples.sampled > 0 && (
+          <div className="mt-3 rounded-md border border-slate-800 p-2">
+            <SampleCountChart tally={samples} total={d.total} parties={partyMap} />
+          </div>
+        )}
         {d.valid > 0 && (
           <div className="mt-2">
-            <ShareBar parts={Object.entries(d.votes).sort((a, b) => b[1] - a[1]).map(([p, v]) => ({ color: partyMap[p]?.color ?? '#999', value: v, label: `${p} ${pct(v / d.valid)}` }))} />
+            <ShareBar parts={Object.entries(d.votes).sort((a, b) => b[1] - a[1]).map(([p, v]) => ({ color: partyMap[p]?.color ?? '#999', value: v, label: `${p} ${fmt(v)} (${pct(v / d.valid)})` }))} />
             <div className="mt-1 flex flex-wrap gap-x-3 text-[11px] text-slate-300">
-              {Object.entries(d.votes).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([p, v]) => <span key={p}>{p} <b className="tabular">{pct(v / d.valid)}</b></span>)}
+              {Object.entries(d.votes).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([p, v]) => <span key={p}>{p} <span className="tabular">{fmt(v)}</span> <b className="tabular">({pct(v / d.valid)})</b></span>)}
               <span className="text-slate-500">of declared votes</span>
             </div>
           </div>
@@ -177,6 +188,42 @@ function NightLive({ onRestart }: { onRestart: () => void }) {
         <p className="mt-2 text-[11px] text-slate-500">Seed {night.seed}. Sample counts are accurate to ±4 percentage points at 95% confidence, as with ELD's real sample counts. GE2025 national result for reference: PAP {pct(ge.parties.PAP.national)}.</p>
       </Section>
     </div>
+  )
+}
+
+/** Plays the music bed while the count runs, with stings on big news and a flourish at the end. */
+function useNightMusic() {
+  const playing = useNight((s) => s.playing)
+  const cursor = useNight((s) => s.cursor)
+  const events = useNight((s) => s.events)
+  const done = cursor >= events.length
+  useEffect(() => {
+    if (playing && !done) nightMusic.play()
+    else nightMusic.pause()
+  }, [playing, done])
+  useEffect(() => () => nightMusic.pause(), [])
+  const prev = useRef(cursor)
+  useEffect(() => {
+    const from = prev.current
+    prev.current = cursor
+    if (cursor <= from) return
+    if (done) { nightMusic.sting('final'); return }
+    let sting: 'breaking' | 'projection' | null = null
+    for (let i = from; i < cursor; i++) {
+      const e = events[i]
+      if (e.kind === 'news' && (e.tag === 'projection' || (e.tag === 'breaking' && !sting))) sting = e.tag
+    }
+    if (sting) nightMusic.sting(sting)
+  }, [cursor, events, done])
+}
+
+function MuteButton({ className = '' }: { className?: string }) {
+  const muted = useMusic((s) => s.muted)
+  const toggle = useMusic((s) => s.toggle)
+  return (
+    <Button onClick={toggle} className={className} title={muted ? 'Unmute music' : 'Mute music'} aria-label={muted ? 'Unmute music' : 'Mute music'} aria-pressed={muted}>
+      {muted ? <VolumeX size={14} aria-hidden /> : <Volume2 size={14} aria-hidden />}
+    </Button>
   )
 }
 
@@ -295,7 +342,7 @@ function FinalSummary({ plan, partyMap }: { plan: Constituency[]; partyMap: Reco
       )}
       {coalition && <p className="mt-1 text-[10px] text-slate-500">Non-Constituency MP offers below are as computed on the night, before coalition talks.</p>}
       <table className="mt-2 w-full text-xs">
-        <thead className="text-[10px] uppercase text-slate-500"><tr><th className="text-left font-medium">Party</th><th className="text-right font-medium">Seats</th><th className="text-right font-medium">Vote</th><th className="text-right font-medium">vs 2025</th></tr></thead>
+        <thead className="text-[10px] uppercase text-slate-500"><tr><th className="text-left font-medium">Party</th><th className="text-right font-medium">Seats</th><th className="text-right font-medium">Votes</th><th className="text-right font-medium">vs 2025</th></tr></thead>
         <tbody>
           {Object.entries(result.votesByParty).sort((a, b) => (result.seatsByParty[b[0]] ?? 0) - (result.seatsByParty[a[0]] ?? 0) || b[1] - a[1]).map(([p, v]) => {
             const share = v / result.totalValid
@@ -305,7 +352,7 @@ function FinalSummary({ plan, partyMap }: { plan: Constituency[]; partyMap: Reco
               <tr key={p} className="border-t border-slate-800/70">
                 <td className="py-1"><PartyBadge party={partyMap[p]} small /> <span className="text-slate-300">{partyMap[p]?.name}</span></td>
                 <td className="tabular text-right font-semibold">{result.seatsByParty[p] ?? 0}{ncmp ? <span className="font-normal text-slate-400"> +{ncmp}N</span> : ''}</td>
-                <td className="tabular text-right">{pct(share)}</td>
+                <td className="tabular text-right"><span className="whitespace-nowrap text-slate-300">{fmt(v)}</span> <span className="whitespace-nowrap font-semibold">{pct(share)}</span></td>
                 <td className={`tabular text-right ${prev === undefined ? 'text-slate-500' : share - prev >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{prev === undefined ? 'new' : `${share - prev >= 0 ? '+' : ''}${((share - prev) * 100).toFixed(1)}`}</td>
               </tr>
             )
@@ -347,6 +394,7 @@ export function NightOverlay() {
           <span key={p} className="flex items-center gap-1"><PartyBadge party={partyMap[p]} small /><b className="tabular">{n}</b></span>
         ))}
         <span className="text-xs text-slate-400">{d.total - d.declared} to declare</span>
+        <MuteButton className="pointer-events-auto -my-1 -mr-2 rounded-full border-0 px-1.5 py-1" />
       </div>
       <NewsTicker />
       {called && (

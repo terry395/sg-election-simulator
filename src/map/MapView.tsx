@@ -8,6 +8,7 @@ import { useStore } from '../state/store'
 import { useDerived } from '../state/derived'
 import { useBlockColors } from './useBlockColors'
 import { BlockTooltip } from './BlockTooltip'
+import { Map as MapIcon, Satellite } from 'lucide-react'
 
 maplibregl.setWorkerUrl(workerUrl)
 
@@ -18,7 +19,9 @@ const FALLBACK_STYLE: maplibregl.StyleSpecification = {
   sources: {},
   layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#dfe7ef' } }],
 }
-const SG_BOUNDS: [number, number, number, number] = [103.55, 1.13, 104.15, 1.49]
+const SATELLITE_TILES = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+const SATELLITE_ATTRIBUTION = 'Imagery © Esri, Maxar, Earthstar Geographics'
+const SG_BOUNDS:[number, number, number, number] = [103.55, 1.13, 104.15, 1.49]
 
 /** Paint-type tools that capture left-drag instead of panning the map. */
 const DRAG_TOOLS = new Set(['paint', 'erase', 'lasso'])
@@ -33,6 +36,8 @@ export function MapView() {
   const tab = useStore((s) => s.tab)
   const showGE2025 = useStore((s) => s.showGE2025)
   const activeId = useStore((s) => s.activeId)
+  const basemap = useStore((s) => s.basemap)
+  const setBasemap = useStore((s) => s.setBasemap)
   const { districts, labels } = useDerived()
   const colors = useBlockColors()
   const spaceDown = useRef(false)
@@ -72,6 +77,9 @@ export function MapView() {
       map.addSource('labels', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
       map.addSource('lasso', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
       const firstSymbol = map.getStyle().layers.find((l: { type: string }) => l.type === 'symbol')?.id
+      // satellite imagery sits above the basemap's fills but below the blocks and street labels
+      map.addSource('satellite', { type: 'raster', tiles: [SATELLITE_TILES], tileSize: 256, maxzoom: 19, attribution: SATELLITE_ATTRIBUTION })
+      map.addLayer({ id: 'satellite', type: 'raster', source: 'satellite', layout: { visibility: 'none' } }, firstSymbol)
       map.addLayer({
         id: 'blocks-fill', type: 'fill', source: 'blocks',
         paint: {
@@ -122,6 +130,15 @@ export function MapView() {
     map.setLayoutProperty('ge2025-line', 'visibility', showGE2025 ? 'visible' : 'none')
     map.setFilter('districts-active', ['==', ['get', 'id'], tab === 'draw' ? activeId ?? '' : ''])
   }, [showGE2025, activeId, tab, ready])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!ready || !map || !map.getLayer('satellite')) return
+    const sat = basemap === 'satellite'
+    map.setLayoutProperty('satellite', 'visibility', sat ? 'visible' : 'none')
+    // let the imagery show through the colours
+    map.setPaintProperty('blocks-fill', 'fill-opacity', ['case', ['boolean', ['feature-state', 'hover'], false], sat ? 0.8 : 0.95, sat ? 0.5 : 0.78])
+  }, [basemap, ready])
 
   // ------------------------------------------------------------------ interaction
   useEffect(() => {
@@ -256,6 +273,15 @@ export function MapView() {
     <div className="relative h-full w-full">
       <div ref={el} className="h-full w-full" />
       {hover && <BlockTooltip id={hover.id} x={hover.x} y={hover.y} />}
+      {/* sits under the zoom buttons */}
+      <div className="absolute left-2.5 top-[82px] z-10 flex overflow-hidden rounded-md text-[11px] font-medium shadow ring-1 ring-black/20" role="group" aria-label="Basemap">
+        {([['map', 'Map', MapIcon], ['satellite', 'Satellite', Satellite]] as const).map(([id, label, Icon]) => (
+          <button key={id} onClick={() => setBasemap(id)} aria-pressed={basemap === id} title={`${label} view`}
+            className={`inline-flex items-center gap-1 px-2 py-1 ${basemap === id ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 hover:bg-slate-100'}`}>
+            <Icon size={13} aria-hidden /><span className="hidden sm:inline">{label}</span>
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
