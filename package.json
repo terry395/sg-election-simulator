@@ -7,6 +7,7 @@
     "fetch-data": "node pipeline/fetch.mjs",
     "data": "node --max-old-space-size=8192 pipeline/build.mjs",
     "guide:shots": "node scripts/guide-shots.mjs",
+    "guide:video": "node scripts/guide-video.mjs",
     "test": "vitest run",
     "dev": "vite",
     "build": "tsc -b && vite build",

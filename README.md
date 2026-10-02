@@ -43,7 +43,7 @@ npm run build      # static site in dist/ — deploy to Netlify, Vercel, GitHub 
 
 ## Beginner guide
 
-`guide.html` is a standalone page (a second Vite entry) with screenshots in `public/guide/`. To refresh the screenshots after UI changes, start `npm run dev` (port 5317, or set `GUIDE_URL`) and run `npm run guide:shots`. It drives the app in headless Chromium (`npx playwright install chromium` once) using deterministic seeds, so the numbers quoted in the guide stay correct.
+`guide.html` is a standalone page (a second Vite entry) with screenshots in `public/guide/`. To refresh the screenshots after UI changes, start `npm run dev` (port 5317, or set `GUIDE_URL`) and run `npm run guide:shots`. It drives the app in headless Chromium (`npx playwright install chromium` once) using deterministic seeds, so the numbers quoted in the guide stay correct. `npm run guide:video` re-records the one-minute demo video (`public/guide/demo.webm`) the same way; it uses the GPU and trims the page-load pre-roll with ffmpeg (from PATH, or the copy Playwright installs).
 
 ## Data pipeline
 

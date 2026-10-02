@@ -81,6 +81,8 @@
   .badge { display: inline-block; min-width: 44px; text-align: center; font-weight: 800; font-size: 12px; border-radius: 4px; padding: 2px 6px; color: #fff; }
 
   figure.shot { margin: 22px 0 28px; }
+  .frame video { display: block; width: 100%; height: auto; }
+  .video .frame { cursor: auto; }
   .frame { position: relative; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 8px 30px rgb(0 0 0 / .18); cursor: zoom-in; }
   .pin { position: absolute; transform: translate(-50%, -50%); width: clamp(18px, 2.3vw, 28px); height: clamp(18px, 2.3vw, 28px); border-radius: 50%;
     background: #facc15; color: #111827; border: 2px solid #111827; font: 800 clamp(10px, 1.2vw, 14px)/1 system-ui, sans-serif;
@@ -192,6 +194,10 @@
         <li><b>Swings & forecast</b>Decide whether voters lean more towards the government or the opposition than last time.</li>
         <li><b>Election night</b>Watch the votes being counted and see who wins.</li>
       </ol>
+      <figure class="shot video">
+        <div class="frame"><video src="/guide/demo.webm" poster="/guide/demo-poster.jpg" controls muted playsinline preload="metadata" aria-label="One-minute demonstration of the simulator"></video></div>
+        <figcaption><span class="title">Watch it in one minute</span> Painting a new seat, choosing who stands in East Coast, tilting the national mood, then counting the votes on election night.</figcaption>
+      </figure>
     </section>
 
     <!-- ============================================================ BASICS -->
@@ -884,7 +890,7 @@
 <script>
   // enlarge screenshots (with their numbered markers) on click
   const lb = document.getElementById('lightbox')
-  document.querySelectorAll('figure.shot .frame').forEach((f) => {
+  document.querySelectorAll('figure.shot:not(.video) .frame').forEach((f) => {
     f.addEventListener('click', () => {
       lb.innerHTML = ''
       const copy = f.cloneNode(true)
