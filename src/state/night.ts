@@ -4,6 +4,7 @@ import type { ElectionResult } from '../model/swing'
 import type { Constituency } from '../types'
 
 export type Reveal = 'sample' | 'result'
+export type NightMode = 'surprise' | 'projection'
 
 interface NightState {
   plan: Constituency[] | null
@@ -18,8 +19,13 @@ interface NightState {
   revealed: Record<string, Reveal>
   /** coalition chosen to govern after a hung result */
   coalition: string[] | null
+  /** realistic night (random surprises) or exactly the forecast */
+  mode: NightMode
+  /** the post-night report is open */
+  reportOpen: boolean
   setCoalition: (c: string[] | null) => void
-  start: (plan: Constituency[], result: ElectionResult, events: NightEvent[], seed: number) => void
+  setReportOpen: (v: boolean) => void
+  start: (plan: Constituency[], result: ElectionResult, events: NightEvent[], seed: number, mode?: NightMode) => void
   setPlaying: (v: boolean) => void
   setSpeed: (v: number) => void
   advance: (dt: number) => void
@@ -52,8 +58,11 @@ export const useNight = create<NightState>((set, get) => ({
   seed: 1,
   revealed: {},
   coalition: null,
+  mode: 'surprise',
+  reportOpen: false,
   setCoalition: (coalition) => set({ coalition }),
-  start: (plan, result, events, seed) => set({ plan, result, events, seed, t: -5, cursor: 0, revealed: {}, playing: true, coalition: null }),
+  setReportOpen: (reportOpen) => set({ reportOpen }),
+  start: (plan, result, events, seed, mode = 'surprise') => set({ plan, result, events, seed, mode, t: -5, cursor: 0, revealed: {}, playing: true, coalition: null, reportOpen: false }),
   setPlaying: (playing) => set({ playing }),
   setSpeed: (speed) => set({ speed }),
   advance: (dt) => {
@@ -75,7 +84,7 @@ export const useNight = create<NightState>((set, get) => ({
     const e = s.events[s.cursor]
     if (e) set(applyUntil(s, e.t))
   },
-  reset: () => set({ result: null, plan: null, events: [], t: -5, cursor: 0, revealed: {}, playing: false, coalition: null }),
+  reset: () => set({ result: null, plan: null, events: [], t: -5, cursor: 0, revealed: {}, playing: false, coalition: null, reportOpen: false }),
 }))
 
 if (import.meta.env.DEV) (window as unknown as { __night: typeof useNight }).__night = useNight

@@ -3,7 +3,8 @@ import { useStore } from '../state/store'
 import { useDerived } from '../state/derived'
 import { useNight } from '../state/night'
 import { Button, PartyBadge, Section, ShareBar, Swatch, pct, fmt } from '../components/ui'
-import { FastForward, Info, Newspaper, Pause, Play, RotateCcw, SkipForward, Volume2, VolumeX } from 'lucide-react'
+import { FastForward, FileText, Info, Newspaper, Pause, Play, RotateCcw, SkipForward, Volume2, VolumeX } from 'lucide-react'
+import { notionalHolder } from '../model/report'
 import { CoalitionBuilder } from '../components/CoalitionBuilder'
 import { coalitionName, isHung, majorityOf } from '../model/coalition'
 import { DISCLAIMER_SHORT } from '../data/disclaimer'
@@ -42,11 +43,6 @@ export function useDeclared() {
   }, [result, plan, revealed])
 }
 
-/** The party that held these voters in 2025 (notionally). */
-function notionalHolder(pap0: number, mainOpp: string) {
-  return pap0 >= 0.5 ? PAP : mainOpp
-}
-
 export function NightPanel() {
   const plan = useStore((s) => s.plan)
   const swings = useStore((s) => s.swings)
@@ -65,7 +61,7 @@ export function NightPanel() {
       prevNational: Object.fromEntries(Object.entries(ge.parties).map(([p, v]) => [p, v.national])),
       contests,
     }
-    night.start(plan.constituencies, result, buildTimeline(plan.constituencies, result, seed, news), seed)
+    night.start(plan.constituencies, result, buildTimeline(plan.constituencies, result, seed, news), seed, mode)
   }
 
   // animation loop: speed = simulated minutes per real second
@@ -123,6 +119,12 @@ function NightLive({ onRestart }: { onRestart: () => void }) {
   const ge = useStore((s) => s.data)!.ge
   const samples = useMemo(() => tallySamples(night.events, night.cursor, plan), [night.events, night.cursor, plan])
   useNightMusic()
+  // the report opens by itself once the last result is in
+  const wasDone = useRef(done)
+  useEffect(() => {
+    if (done && !wasDone.current) useNight.getState().setReportOpen(true)
+    wasDone.current = done
+  }, [done])
 
   return (
     <div>
@@ -329,6 +331,9 @@ function FinalSummary({ plan, partyMap }: { plan: Constituency[]; partyMap: Reco
   })
   return (
     <Section title="Result">
+      <Button variant="primary" className="mb-2 w-full py-2 text-sm" onClick={() => useNight.getState().setReportOpen(true)}>
+        <FileText size={15} aria-hidden /> Read the election report
+      </Button>
       <div className="rounded-md bg-gradient-to-r from-slate-800 to-slate-900 p-3">
         <div className="text-base font-bold">{verdict}</div>
         <div className="text-xs text-slate-300">
@@ -386,6 +391,7 @@ export function NightOverlay() {
   const leader = Object.entries(d.seats).sort((a, b) => b[1] - a[1])[0]
   const majority = Math.floor(d.total / 2) + 1
   const called = leader && leader[1] >= majority
+  const done = night.cursor >= night.events.length
   return (
     <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex flex-col items-center gap-2 px-3">
       <div className="flex items-center gap-3 rounded-full bg-slate-950/85 px-4 py-1.5 text-sm shadow-lg ring-1 ring-slate-700 backdrop-blur">
@@ -401,6 +407,11 @@ export function NightOverlay() {
         <div className="rounded-lg px-4 py-2 text-center text-sm font-extrabold uppercase tracking-wide shadow-xl" style={{ background: partyMap[leader[0]]?.color, color: '#fff' }}>
           {leader[0]} wins a majority — {leader[1]} seats declared
         </div>
+      )}
+      {done && !night.reportOpen && (
+        <button onClick={() => night.setReportOpen(true)} className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full bg-slate-950/90 px-3 py-1 text-xs font-semibold text-slate-100 shadow-lg ring-1 ring-rose-500/70 hover:bg-slate-900">
+          <FileText size={13} className="text-rose-300" aria-hidden /> Election report ready: read it
+        </button>
       )}
     </div>
   )

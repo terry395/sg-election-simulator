@@ -12,6 +12,7 @@ import { Button, Swatch, fmt } from './components/ui'
 import { AlertTriangle, ArrowRight, BookOpen, Download, Info, Landmark, Loader2, Share2, ShieldCheck, Upload, Vote, X } from 'lucide-react'
 import { DISCLAIMER_FULL, DISCLAIMER_SHORT } from './data/disclaimer'
 import { PartyDrawer } from './components/PartyDrawer'
+import { ElectionReport } from './components/ElectionReport'
 import { decodeState, encodeState, type SharedState } from './share/serialize'
 import { DEFAULT_PARTIES } from './data/parties'
 
@@ -123,6 +124,7 @@ function Shell() {
         </aside>
       </main>
       <Footer />
+      <ElectionReport />
     </div>
   )
 }

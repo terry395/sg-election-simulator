@@ -252,6 +252,11 @@ await shot('15-night-live')
 // 16 final result
 await run(() => window.__night.getState().skipToEnd())
 await idle()
+// 24 the election report opens by itself at the end of the night
+await sleep(400)
+await shot('24-night-report')
+await run(() => window.__night.getState().setReportOpen(false))
+await idle()
 await scrollPanelTo('Result')
 await shot('16-night-result')
 
