@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { FileText, Info, X } from 'lucide-react'
+import { FileText, Info, ScrollText, X } from 'lucide-react'
 import { useStore } from '../state/store'
 import { useDerived } from '../state/derived'
 import { useNight } from '../state/night'
@@ -265,6 +265,9 @@ function Boundaries({ r, partyMap, showSeat }: Ctx) {
       <T k="boundaries">Electoral boundaries</T> decide which voters are grouped together to elect each MP. Moving them can change who wins, even if nobody changes their vote. This section compares your map with the one used in 2025.
     </>}>
       {!b.changed && <p className="rounded-md bg-slate-900 p-2 text-xs text-slate-300">You used the GE2025 map without changes, so every constituency has the same voters as in 2025.</p>}
+      <button type="button" onClick={() => useStore.getState().setEbrcOpen(true)} className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-400 hover:underline">
+        <ScrollText size={14} aria-hidden /> Read the mock EBRC report for this map
+      </button>
       <Table head={['', 'GE2025 map', 'Your map', 'Change']}>
         {rows.map(([label, k]) => (
           <tr key={k}><Td left>{label}</Td><Td>{fmt(b.count2025[k])}</Td><Td className="font-semibold">{fmt(b.count[k])}</Td><Td><Change v={b.count[k] - b.count2025[k]} d={0} /></Td></tr>

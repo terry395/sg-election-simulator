@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import * as maplibregl from 'maplibre-gl'
-import type { GeoJSONSource, MapMouseEvent } from 'maplibre-gl'
+import type { GeoJSONSource, MapMouseEvent, MapTouchEvent } from 'maplibre-gl'
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import { feature } from 'topojson-client'
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon'
@@ -9,6 +9,8 @@ import { useDerived } from '../state/derived'
 import { useBlockColors } from './useBlockColors'
 import { BlockTooltip } from './BlockTooltip'
 import { Map as MapIcon, Satellite } from 'lucide-react'
+import { useIsMobile } from '../lib/useIsMobile'
+import { useSheet } from '../lib/sheet'
 
 maplibregl.setWorkerUrl(workerUrl)
 
@@ -30,6 +32,8 @@ export function MapView() {
   const el = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const [ready, setReady] = useState(false)
+  /** the map element, kept in state so the info card can size itself to it */
+  const [box, setBox] = useState<HTMLDivElement | null>(null)
   const [hover, setHover] = useState<{ id: number; x: number; y: number } | null>(null)
   const data = useStore((s) => s.data)!
   const tool = useStore((s) => s.tool)
@@ -41,6 +45,8 @@ export function MapView() {
   const { districts, labels } = useDerived()
   const colors = useBlockColors()
   const spaceDown = useRef(false)
+  const mobile = useIsMobile()
+  const sheetH = useSheet((s) => s.height)
 
   // ------------------------------------------------------------------ init
   useEffect(() => {
@@ -140,6 +146,13 @@ export function MapView() {
     map.setPaintProperty('blocks-fill', 'fill-opacity', ['case', ['boolean', ['feature-state', 'hover'], false], sat ? 0.8 : 0.95, sat ? 0.5 : 0.78])
   }, [basemap, ready])
 
+  // phones: keep the map's focus in the part not covered by the bottom sheet
+  useEffect(() => {
+    const map = mapRef.current
+    if (!ready || !map) return
+    map.easeTo({ padding: { top: 0, left: 0, right: 0, bottom: mobile ? sheetH : 0 }, duration: 250 })
+  }, [mobile, sheetH, ready])
+
   // ------------------------------------------------------------------ interaction
   useEffect(() => {
     const map = mapRef.current
@@ -154,7 +167,7 @@ export function MapView() {
     let painting = false
     let lasso: [number, number][] = []
     const st = () => useStore.getState()
-    const blockAt = (e: MapMouseEvent) => {
+    const blockAt = (e: { point: maplibregl.Point }) => {
       const f = map.queryRenderedFeatures(e.point, { layers: ['blocks-fill'] })[0]
       return f ? (f.id as number) : null
     }
@@ -176,24 +189,35 @@ export function MapView() {
         : { type: 'FeatureCollection', features: [] })
     }
 
-    const onDown = (e: MapMouseEvent) => {
-      if (!drawing || spaceDown.current || e.originalEvent.button !== 0) return
+    // browsers follow a touch with emulated mouse events; ignore those so a tap isn't handled twice
+    let lastTouch = 0
+    const fromTouch = () => performance.now() - lastTouch < 800
+
+    const start = (e: MapMouseEvent | MapTouchEvent) => {
       if (tool !== 'lasso' && !st().activeId && tool !== 'erase') return
       st().checkpoint()
       painting = true
       if (tool === 'lasso') lasso = [[e.lngLat.lng, e.lngLat.lat]]
       else paintAt(blockAt(e))
     }
-    const onMove = (e: MapMouseEvent) => {
-      const id = blockAt(e)
-      setHoverState(id)
-      // the info card would cover what you are drawing
-      setHover(id === null || painting ? null : { id, x: e.point.x, y: e.point.y })
+    const extend = (e: MapMouseEvent | MapTouchEvent, id: number | null) => {
       if (!painting) return
       if (tool === 'lasso') {
         lasso.push([e.lngLat.lng, e.lngLat.lat])
         setLasso(lasso)
       } else paintAt(id)
+    }
+    const onDown = (e: MapMouseEvent) => {
+      if (fromTouch() || !drawing || spaceDown.current || e.originalEvent.button !== 0) return
+      start(e)
+    }
+    const onMove = (e: MapMouseEvent) => {
+      if (fromTouch()) return
+      const id = blockAt(e)
+      setHoverState(id)
+      // the info card would cover what you are drawing
+      setHover(id === null || painting ? null : { id, x: e.point.x, y: e.point.y })
+      extend(e, id)
     }
     const onUp = () => {
       if (!painting) return
@@ -207,14 +231,56 @@ export function MapView() {
       lasso = []
       setLasso([])
     }
+
+    // touch: one finger draws with a drawing tool; a second finger cancels the stroke and moves the map
+    let twoFinger = false
+    let strokeStart = 0
+    const onTouchStart = (e: MapTouchEvent) => {
+      lastTouch = performance.now()
+      const n = e.originalEvent.touches.length
+      if (n === 1) setHover(null)
+      if (!drawing) return
+      if (n > 1) {
+        if (painting) {
+          painting = false
+          lasso = []
+          setLasso([])
+          // the first finger of a pinch landed a moment earlier: take back what it painted
+          if (performance.now() - strokeStart < 300) st().undo()
+        }
+        twoFinger = true
+        map.dragPan.enable()
+        return
+      }
+      if (!twoFinger) { strokeStart = performance.now(); start(e) }
+    }
+    const onTouchMove = (e: MapTouchEvent) => {
+      lastTouch = performance.now()
+      if (!drawing || twoFinger || e.originalEvent.touches.length !== 1) return
+      const id = blockAt(e)
+      setHoverState(id)
+      extend(e, id)
+    }
+    const onTouchEnd = (e: MapTouchEvent) => {
+      lastTouch = performance.now()
+      if (!drawing) return
+      if (e.originalEvent.touches.length === 0) {
+        if (twoFinger) { twoFinger = false; if (!spaceDown.current) map.dragPan.disable() }
+        else onUp()
+        setHoverState(null)
+      }
+    }
+
     const onClick = (e: MapMouseEvent) => {
       const id = blockAt(e)
       const s = st()
-      if (id === null) return
+      if (id === null) { setHover(null); return }
       if (s.tab !== 'draw' || tool === 'inspect' || tool === 'pan') {
         s.setSelectedBlock(id)
         const cid = s.plan.assign[id]
         if (cid) s.setActive(cid)
+        // touch has no hover: a tap shows the area's info card
+        if (fromTouch()) setHover({ id, x: e.point.x, y: e.point.y })
         return
       }
       if (tool === 'fill' && s.activeId) {
@@ -231,12 +297,18 @@ export function MapView() {
         s.assignBlocks([...seen], s.activeId)
       }
     }
-    const onLeave = () => { setHoverState(null); setHover(null) }
+    const onLeave = () => { if (fromTouch()) return; setHoverState(null); setHover(null) }
+    const onMoveStart = (e: { originalEvent?: Event }) => { if (e.originalEvent && fromTouch()) setHover(null) }
 
     map.on('mousedown', onDown)
     map.on('mousemove', onMove)
     map.on('click', onClick)
     map.on('mouseout', onLeave)
+    map.on('touchstart', onTouchStart)
+    map.on('touchmove', onTouchMove)
+    map.on('touchend', onTouchEnd)
+    map.on('touchcancel', onTouchEnd)
+    map.on('movestart', onMoveStart)
     window.addEventListener('mouseup', onUp)
     // hold space to pan temporarily while a drawing tool is active
     const kd = (e: KeyboardEvent) => {
@@ -261,23 +333,29 @@ export function MapView() {
       map.off('mousemove', onMove)
       map.off('click', onClick)
       map.off('mouseout', onLeave)
+      map.off('touchstart', onTouchStart)
+      map.off('touchmove', onTouchMove)
+      map.off('touchend', onTouchEnd)
+      map.off('touchcancel', onTouchEnd)
+      map.off('movestart', onMoveStart)
       window.removeEventListener('mouseup', onUp)
       window.removeEventListener('keydown', kd)
       window.removeEventListener('keyup', ku)
       // the map may already be destroyed when this effect is torn down
       try { setHoverState(null) } catch { /* map removed */ }
+      setHover(null)
     }
   }, [ready, tool, tab])
 
   return (
     <div className="relative h-full w-full">
-      <div ref={el} className="h-full w-full" />
-      {hover && <BlockTooltip id={hover.id} x={hover.x} y={hover.y} />}
+      <div ref={(n) => { el.current = n; setBox(n) }} className="h-full w-full" />
+      {hover && <BlockTooltip id={hover.id} x={hover.x} y={hover.y} bounds={box} bottomInset={mobile ? sheetH : 0} onClose={() => setHover(null)} />}
       {/* sits under the zoom buttons */}
-      <div className="absolute left-2.5 top-[82px] z-10 flex overflow-hidden rounded-md text-[11px] font-medium shadow ring-1 ring-black/20" role="group" aria-label="Basemap">
+      <div className="absolute left-2.5 top-[82px] z-10 flex overflow-hidden rounded-md text-[11px] phone:top-[96px] font-medium shadow ring-1 ring-black/20" role="group" aria-label="Basemap">
         {([['map', 'Map', MapIcon], ['satellite', 'Satellite', Satellite]] as const).map(([id, label, Icon]) => (
           <button key={id} onClick={() => setBasemap(id)} aria-pressed={basemap === id} title={`${label} view`}
-            className={`inline-flex items-center gap-1 px-2 py-1 ${basemap === id ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 hover:bg-slate-100'}`}>
+            className={`inline-flex items-center gap-1 px-2 py-1 phone:px-2.5 phone:py-2 ${basemap === id ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 hover:bg-slate-100'}`}>
             <Icon size={13} aria-hidden /><span className="hidden sm:inline">{label}</span>
           </button>
         ))}

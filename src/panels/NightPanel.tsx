@@ -17,6 +17,7 @@ import { runElection, type SeatResult } from '../model/swing'
 import { rng } from '../model/rng'
 import { PAP } from '../data/parties'
 import type { Constituency, Party } from '../types'
+import { useSheet } from '../lib/sheet'
 
 const SPEEDS = [{ v: 2, label: '1×' }, { v: 6, label: '3×' }, { v: 20, label: '10×' }]
 
@@ -62,6 +63,8 @@ export function NightPanel() {
       contests,
     }
     night.start(plan.constituencies, result, buildTimeline(plan.constituencies, result, seed, news), seed, mode)
+    // phones: lower the panel so the map and scoreboard are in view
+    useSheet.getState().setSnap('peek')
   }
 
   // animation loop: speed = simulated minutes per real second
@@ -129,17 +132,7 @@ function NightLive({ onRestart }: { onRestart: () => void }) {
   return (
     <div>
       <Section title="Live" right={<span className="tabular text-lg font-bold text-rose-400">{night.t < 0 ? '8:00 pm' : clock(night.t)}</span>}>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Button variant={night.playing ? 'subtle' : 'primary'} onClick={() => night.setPlaying(!night.playing)} disabled={done}>{night.playing ? <><Pause size={14} aria-hidden /> Pause</> : <><Play size={14} aria-hidden /> Play</>}</Button>
-          <Button onClick={night.stepNext} disabled={done} title="Next announcement"><SkipForward size={14} aria-hidden /> Next</Button>
-          <div className="flex overflow-hidden rounded-md border border-slate-700">
-            {SPEEDS.map((s) => (
-              <button key={s.v} onClick={() => night.setSpeed(s.v)} className={`px-2 py-1 text-xs ${night.speed === s.v ? 'bg-slate-200 text-slate-900' : 'text-slate-300 hover:bg-slate-800'}`}>{s.label}</button>
-            ))}
-          </div>
-          <Button onClick={night.skipToEnd} disabled={done} title="Skip to the end">Skip <FastForward size={14} aria-hidden /></Button>
-          <MuteButton className="ml-auto" />
-        </div>
+        <NightControls />
         <div className="mt-3 flex justify-center">
           <Hemicycle seats={d.seats} total={d.total} parties={partyMap} ncmp={done ? night.result!.ncmp : undefined} width={330} government={night.coalition ?? undefined} />
         </div>
@@ -189,6 +182,25 @@ function NightLive({ onRestart }: { onRestart: () => void }) {
         <Button onClick={onRestart} className="w-full"><RotateCcw size={14} aria-hidden /> New election night (new random draw)</Button>
         <p className="mt-2 text-[11px] text-slate-500">Seed {night.seed}. Sample counts are accurate to ±4 percentage points at 95% confidence, as with ELD's real sample counts. GE2025 national result for reference: PAP {pct(ge.parties.PAP.national)}.</p>
       </Section>
+    </div>
+  )
+}
+
+/** Play / pause, step, speed and skip for the count (also shown in the phone sheet's peek row). */
+export function NightControls({ compact = false }: { compact?: boolean }) {
+  const night = useNight()
+  const done = night.cursor >= night.events.length
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <Button variant={night.playing ? 'subtle' : 'primary'} onClick={() => night.setPlaying(!night.playing)} disabled={done}>{night.playing ? <><Pause size={14} aria-hidden /> Pause</> : <><Play size={14} aria-hidden /> Play</>}</Button>
+      <Button onClick={night.stepNext} disabled={done} title="Next announcement" aria-label="Next announcement"><SkipForward size={14} aria-hidden />{!compact && ' Next'}</Button>
+      <div className="flex overflow-hidden rounded-md border border-slate-700">
+        {SPEEDS.map((s) => (
+          <button key={s.v} onClick={() => night.setSpeed(s.v)} className={`px-2 py-1 text-xs phone:min-h-9 phone:px-2.5 ${night.speed === s.v ? 'bg-slate-200 text-slate-900' : 'text-slate-300 hover:bg-slate-800'}`}>{s.label}</button>
+        ))}
+      </div>
+      <Button onClick={night.skipToEnd} disabled={done} title="Skip to the end" aria-label="Skip to the end">{!compact && 'Skip '}<FastForward size={14} aria-hidden /></Button>
+      {!compact && <MuteButton className="ml-auto" />}
     </div>
   )
 }
@@ -394,7 +406,7 @@ export function NightOverlay() {
   const done = night.cursor >= night.events.length
   return (
     <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex flex-col items-center gap-2 px-3">
-      <div className="flex items-center gap-3 rounded-full bg-slate-950/85 px-4 py-1.5 text-sm shadow-lg ring-1 ring-slate-700 backdrop-blur">
+      <div className="flex max-w-full flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-2xl bg-slate-950/85 px-4 py-1.5 text-sm shadow-lg ring-1 ring-slate-700 backdrop-blur phone:gap-x-2 phone:px-3 phone:text-xs desk:rounded-full">
         <span className="tabular font-bold text-rose-400">{night.t < 0 ? '8:00 pm' : clock(night.t)}</span>
         {Object.entries(d.seats).sort((a, b) => b[1] - a[1]).map(([p, n]) => (
           <span key={p} className="flex items-center gap-1"><PartyBadge party={partyMap[p]} small /><b className="tabular">{n}</b></span>

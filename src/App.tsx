@@ -9,10 +9,15 @@ import { ContestPanel } from './panels/ContestPanel'
 import { ForecastPanel } from './panels/ForecastPanel'
 import { NightOverlay, NightPanel, NightParliament } from './panels/NightPanel'
 import { Button, Swatch, fmt } from './components/ui'
-import { AlertTriangle, ArrowRight, BookOpen, Download, Info, Landmark, Loader2, Share2, ShieldCheck, Upload, Vote, X } from 'lucide-react'
+import { AlertTriangle, ArrowRight, BookOpen, Download, Info, Landmark, Loader2, Menu, Moon, PenTool, Share2, ShieldCheck, Swords, TrendingUp, Upload, Vote, X, type LucideIcon } from 'lucide-react'
+import { MobileSheet } from './components/MobileSheet'
+import { useSheet } from './lib/sheet'
+import { MapToolbar } from './map/MapToolbar'
+import { useIsMobile } from './lib/useIsMobile'
 import { DISCLAIMER_FULL, DISCLAIMER_SHORT } from './data/disclaimer'
 import { PartyDrawer } from './components/PartyDrawer'
 import { ElectionReport } from './components/ElectionReport'
+import { EbrcReport } from './components/EbrcReport'
 import { decodeState, encodeState, type SharedState } from './share/serialize'
 import { DEFAULT_PARTIES } from './data/parties'
 
@@ -94,14 +99,27 @@ function Shell() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  // phones: each tab opens with the panel half-way up
+  useEffect(() => { useSheet.getState().setSnap('half') }, [tab])
+  const mobile = useIsMobile()
+  const sheetH = useSheet((s) => s.height)
+
+  const panel = (
+    <>
+      {tab === 'draw' && <DrawPanel />}
+      {tab === 'contests' && <ContestPanel />}
+      {tab === 'forecast' && <ForecastPanel />}
+      {tab === 'night' && <NightPanel />}
+    </>
+  )
   return (
-    // phones: the whole page scrolls (map, then panel); desktop: fixed layout with a scrolling side panel
-    <div className="flex h-full flex-col overflow-y-auto md:overflow-hidden">
+    // phones: full-screen map with the panel in a bottom sheet; desktop: map with a scrolling side panel
+    <div className="flex h-full flex-col overflow-hidden">
       <Header />
       <SharedNotice />
       <WelcomeBanner />
       <PartyDrawer />
-      <nav className="flex shrink-0 gap-1 overflow-x-auto border-b border-slate-800 bg-slate-950 px-3">
+      <nav className="flex shrink-0 gap-1 overflow-x-auto border-b border-slate-800 bg-slate-950 px-3 phone:hidden">
         {TABS.map((t) => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={`whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium ${tab === t.id ? 'border-rose-500 text-white' : 'border-transparent text-slate-400 hover:text-slate-200'}`}>
@@ -109,35 +127,64 @@ function Shell() {
           </button>
         ))}
       </nav>
-      <main className="flex shrink-0 flex-col md:min-h-0 md:flex-1 md:shrink md:flex-row">
-        <div className="relative h-[55vh] shrink-0 md:h-auto md:flex-1">
+      <main className="relative flex min-h-0 flex-1 flex-col desk:flex-row">
+        <div className="relative min-h-0 flex-1 overflow-hidden" style={mobile ? { '--sheet-h': `${sheetH}px` } as React.CSSProperties : undefined}>
           <MapView />
+          <MapToolbar />
           {tab === 'night' && <NightOverlay />}
           {tab === 'night' && <NightParliament />}
           <MapLegend />
         </div>
-        <aside key={tab} className="scroll-thin border-slate-800 bg-slate-950 md:min-h-0 md:w-[420px] md:flex-none md:overflow-y-auto md:border-l">
-          {tab === 'draw' && <DrawPanel />}
-          {tab === 'contests' && <ContestPanel />}
-          {tab === 'forecast' && <ForecastPanel />}
-          {tab === 'night' && <NightPanel />}
-        </aside>
+        {mobile ? <MobileSheet contentKey={tab}>{panel}</MobileSheet> : (
+          <aside key={tab} className="scroll-thin min-h-0 w-[420px] flex-none overflow-y-auto border-l border-slate-800 bg-slate-950">
+            {panel}
+          </aside>
+        )}
       </main>
       <Footer />
+      <BottomTabs />
       <ElectionReport />
+      <EbrcReport />
     </div>
+  )
+}
+
+const TAB_ICONS: Record<Tab, LucideIcon> = { draw: PenTool, contests: Swords, forecast: TrendingUp, night: Moon }
+const SHORT: Record<Tab, string> = { draw: 'Draw', contests: 'Contests', forecast: 'Forecast', night: 'Night' }
+
+/** Phones: tab bar along the bottom edge, within thumb reach. */
+function BottomTabs() {
+  const tab = useStore((s) => s.tab)
+  const setTab = useStore((s) => s.setTab)
+  return (
+    <nav className="flex shrink-0 border-t border-slate-800 bg-slate-950 pb-[env(safe-area-inset-bottom)] desk:hidden" aria-label="Steps">
+      {TABS.map((t) => {
+        const Icon = TAB_ICONS[t.id]
+        return (
+          <button key={t.id} onClick={() => setTab(t.id)} aria-current={tab === t.id ? 'page' : undefined}
+            className={`flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-medium ${tab === t.id ? 'text-rose-400' : 'text-slate-400'}`}>
+            <Icon size={19} aria-hidden />{SHORT[t.id]}
+          </button>
+        )
+      })}
+    </nav>
   )
 }
 
 function MapLegend() {
   const tab = useStore((s) => s.tab)
+  const mobile = useIsMobile()
+  const sheetH = useSheet((s) => s.height)
+  const sheetFull = useSheet((s) => s.snap === 'full')
   const { partyMap, contests, projection } = useDerived()
-  if (tab === 'draw') return null
+  // phones: no room for the legend while the panel is fully raised
+  if (tab === 'draw' || (mobile && sheetFull)) return null
   const ids = tab === 'contests'
     ? [...new Set(Object.values(contests).map((c) => c.parties.find((p) => p !== 'PAP')).filter(Boolean) as string[])]
     : [...new Set(projection.seats.map((s) => s.winner))]
   return (
-    <div className="pointer-events-none absolute bottom-6 left-3 z-10 rounded-md bg-slate-950/85 px-2.5 py-1.5 text-[11px] ring-1 ring-slate-700">
+    <div className="pointer-events-none absolute bottom-6 left-3 z-10 max-w-[calc(100%-5rem)] rounded-md bg-slate-950/85 px-2.5 py-1.5 text-[11px] ring-1 ring-slate-700"
+      style={mobile ? { bottom: sheetH + 30 } : undefined}>
       <div className="mb-0.5 text-slate-400">{tab === 'contests' ? 'Main challenger' : tab === 'forecast' ? 'Projected winner (paler = closer)' : 'Declared winner (grey = counting)'}</div>
       <div className="flex flex-wrap gap-x-2">
         {ids.map((p) => <span key={p}><Swatch color={partyMap[p]?.color} /> {p}</span>)}
@@ -184,11 +231,12 @@ function WelcomeBanner() {
     setShow(false)
   }
   return (
-    <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-rose-900/60 bg-rose-950/60 px-4 py-2 text-sm">
+    <div className="flex shrink-0 items-center gap-x-3 gap-y-1 border-b border-rose-900/60 bg-rose-950/60 px-4 py-2 text-sm phone:px-3 phone:py-1.5 phone:text-xs desk:flex-wrap">
       <BookOpen size={16} className="shrink-0 text-rose-300" aria-hidden />
-      <span>New here? Read the <b>5-minute beginner guide</b>: it explains every button and every election term in plain English. <span className="text-slate-400">{DISCLAIMER_SHORT}</span></span>
-      <a href={GUIDE_URL} target="_blank" rel="noopener" onClick={dismiss} className="inline-flex items-center gap-1 rounded-md bg-rose-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-rose-500">Open the guide <ArrowRight size={13} aria-hidden /></a>
-      <button onClick={dismiss} className="ml-auto inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-200">Dismiss <X size={13} aria-hidden /></button>
+      <span className="phone:hidden">New here? Read the <b>5-minute beginner guide</b>: it explains every button and every election term in plain English. <span className="text-slate-400">{DISCLAIMER_SHORT}</span></span>
+      <span className="min-w-0 flex-1 desk:hidden">New here? Read the <b>5-minute guide</b>.</span>
+      <a href={GUIDE_URL} target="_blank" rel="noopener" onClick={dismiss} className="inline-flex shrink-0 items-center gap-1 rounded-md bg-rose-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-rose-500">Open<span className="phone:hidden"> the guide</span> <ArrowRight size={13} aria-hidden /></a>
+      <button onClick={dismiss} className="inline-flex shrink-0 items-center gap-1 text-xs text-slate-400 hover:text-slate-200 phone:p-1 desk:ml-auto" aria-label="Dismiss"><span className="phone:hidden">Dismiss</span> <X size={13} aria-hidden /></button>
     </div>
   )
 }
@@ -196,7 +244,7 @@ function WelcomeBanner() {
 /** Persistent disclaimer strip at the bottom of the app. */
 function Footer() {
   return (
-    <footer className="flex shrink-0 items-center gap-1.5 border-t border-slate-800 bg-slate-950 px-4 py-1 text-[10px] text-slate-500">
+    <footer className="flex shrink-0 items-center gap-1.5 border-t border-slate-800 bg-slate-950 px-4 py-1 text-[10px] text-slate-500 phone:px-3 phone:py-0.5 phone:text-[9px] phone:leading-tight">
       <ShieldCheck size={12} className="shrink-0" aria-hidden />
       <span>{DISCLAIMER_SHORT} Not affiliated with the Elections Department or any political party.</span>
     </footer>
@@ -210,6 +258,7 @@ function Header() {
   const importState = useStore((s) => s.importState)
   const [msg, setMsg] = useState<string | null>(null)
   const [about, setAbout] = useState(false)
+  const [menu, setMenu] = useState(false)
   const [sharing, setSharing] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(null), 2500) }
@@ -234,37 +283,63 @@ function Header() {
   }
 
   const electors = year === 2030 ? data.ge.totalElectors2030 : data.ge.totalElectors
+  const electorToggle = (
+    <div className="flex flex-wrap items-center gap-2 text-xs">
+      <span className="text-slate-400">Electors</span>
+      <div className="flex overflow-hidden rounded-md border border-slate-700">
+        {([2025, 2030] as const).map((y) => (
+          <button key={y} onClick={() => setYear(y)} className={`whitespace-nowrap px-2.5 py-1 phone:min-h-9 ${year === y ? 'bg-slate-200 text-slate-900' : 'text-slate-300 hover:bg-slate-800'}`}>
+            {y === 2025 ? '2025 register' : '2030 projection'}
+          </button>
+        ))}
+      </div>
+      <span className="tabular text-slate-300">{fmt(electors)}</span>
+    </div>
+  )
+  const menuItem = 'flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-sm text-slate-200 hover:bg-slate-800'
   return (
-    <header className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-slate-800 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 px-4 py-2">
-      <div className="flex items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-rose-600"><Vote size={18} className="text-white" aria-hidden /></div>
-        <div>
+    <header className="relative flex shrink-0 items-center gap-x-4 gap-y-2 border-b border-slate-800 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 px-4 py-2 phone:px-3 desk:flex-wrap">
+      <div className="flex min-w-0 items-center gap-2">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-rose-600"><Vote size={18} className="text-white" aria-hidden /></div>
+        <div className="min-w-0">
           <div className="text-sm font-bold leading-tight">GE2030 Simulator</div>
-          <div className="text-[11px] leading-tight text-slate-400">Singapore electoral boundaries & election night</div>
+          <div className="text-[11px] leading-tight text-slate-400 phone:hidden">Singapore electoral boundaries & election night</div>
         </div>
       </div>
-      <div className="flex items-center gap-2 text-xs">
-        <span className="text-slate-400">Electors</span>
-        <div className="flex overflow-hidden rounded-md border border-slate-700">
-          {([2025, 2030] as const).map((y) => (
-            <button key={y} onClick={() => setYear(y)} className={`px-2.5 py-1 ${year === y ? 'bg-slate-200 text-slate-900' : 'text-slate-300 hover:bg-slate-800'}`}>
-              {y === 2025 ? '2025 register' : '2030 projection'}
-            </button>
-          ))}
-        </div>
-        <span className="tabular text-slate-300">{fmt(electors)}</span>
+      <div className="phone:hidden">{electorToggle}</div>
+      {/* phones: the most-used buttons stay visible, the rest live in a menu */}
+      <div className="ml-auto flex items-center gap-1.5 desk:hidden">
+        {msg && <span className="max-w-28 truncate text-[11px] text-emerald-300">{msg}</span>}
+        <Button onClick={() => useStore.getState().showPartyInfo('PAP')} aria-label="Parties"><Landmark size={16} aria-hidden /></Button>
+        <a href={GUIDE_URL} target="_blank" rel="noopener" aria-label="Beginner guide" className="inline-flex min-h-9 items-center rounded-md border border-rose-500/70 bg-rose-600/15 px-3 text-rose-100"><BookOpen size={16} aria-hidden /></a>
+        <Button onClick={() => setMenu(!menu)} aria-label="More" aria-expanded={menu}><Menu size={16} aria-hidden /></Button>
       </div>
-      <div className="ml-auto flex flex-wrap items-center gap-1.5">
+      {menu && (
+        <>
+          <div className="fixed inset-0 z-40 desk:hidden" onClick={() => setMenu(false)} />
+          <div className="absolute right-2 top-full z-50 mt-1 w-[min(20rem,calc(100vw-1rem))] rounded-xl border border-slate-700 bg-slate-900 p-2 shadow-2xl desk:hidden" role="menu">
+            <div className="px-1 pb-2 pt-1">{electorToggle}</div>
+            <div className="border-t border-slate-800 pt-1" onClick={() => setMenu(false)}>
+              <button className={menuItem} onClick={share}><Share2 size={16} aria-hidden /> Share link</button>
+              <button className={menuItem} onClick={exportJson}><Download size={16} aria-hidden /> Export</button>
+              <button className={menuItem} onClick={() => fileRef.current?.click()}><Upload size={16} aria-hidden /> Import</button>
+              <button className={menuItem} onClick={() => setAbout(true)}><Info size={16} aria-hidden /> About, sources & disclaimer</button>
+            </div>
+            <p className="border-t border-slate-800 px-3 pb-1 pt-2 text-[11px] leading-snug text-slate-500">{DISCLAIMER_SHORT}</p>
+          </div>
+        </>
+      )}
+      <div className="ml-auto flex flex-wrap items-center gap-1.5 phone:hidden">
         {msg && <span className="text-xs text-emerald-300">{msg}</span>}
         <Button onClick={() => useStore.getState().showPartyInfo('PAP')} title="Who are the parties? Beginner-friendly profiles"><Landmark size={14} aria-hidden /> Parties</Button>
         <a href={GUIDE_URL} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 rounded-md border border-rose-500/70 bg-rose-600/15 px-2.5 py-1.5 text-xs font-medium text-rose-100 hover:bg-rose-600/30" title="Step-by-step beginner guide"><BookOpen size={14} aria-hidden /> Guide</a>
         <Button onClick={share} title="Copy a link containing your map, contests and swings"><Share2 size={14} aria-hidden /> Share link</Button>
         <Button onClick={exportJson}><Download size={14} aria-hidden /> Export</Button>
         <Button onClick={() => fileRef.current?.click()}><Upload size={14} aria-hidden /> Import</Button>
-        <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) importJson(f); e.target.value = '' }} />
         <Button onClick={() => setAbout(true)} title="About, sources and disclaimer" aria-label="About"><Info size={14} aria-hidden /></Button>
       </div>
       {about && <About onClose={() => setAbout(false)} />}
+      <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) importJson(f); e.target.value = '' }} />
       {sharing && <ShareDialog url={sharing} onClose={() => setSharing(null)} onCopied={() => flash('Link copied with disclaimer')} />}
     </header>
   )

@@ -37,7 +37,9 @@ interface State {
   swings: Swings
   /** party whose information card is open (null = closed) */
   partyInfo: string | null
-  /** the page was opened from someone's share link */
+  /** the mock EBRC report is open */
+  ebrcOpen: boolean
+    /** the page was opened from someone's share link */
   fromShare: boolean
 
   init: (d: AppData, shared?: SharedState | null, fromLink?: boolean) => void
@@ -72,6 +74,7 @@ interface State {
   removeParty: (id: string) => void
 
   showPartyInfo: (id: string | null) => void
+  setEbrcOpen: (v: boolean) => void
   setSwings: (patch: Partial<Swings>) => void
   resetSwings: () => void
   importState: (s: SharedState) => void
@@ -101,6 +104,7 @@ export const useStore = create<State>((set, get) => ({
   contestOverrides: {},
   swings: DEFAULT_SWINGS,
   partyInfo: null,
+  ebrcOpen: false,
   fromShare: false,
 
   dismissShareNotice: () => set({ fromShare: false }),
@@ -204,6 +208,7 @@ export const useStore = create<State>((set, get) => ({
     })),
 
   showPartyInfo: (partyInfo) => set({ partyInfo }),
+  setEbrcOpen: (ebrcOpen) => set({ ebrcOpen }),
   setSwings: (patch) => set((s) => ({ swings: { ...s.swings, ...patch } })),
   resetSwings: () => set({ swings: DEFAULT_SWINGS }),
   importState: (st) =>

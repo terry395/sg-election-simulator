@@ -5,6 +5,7 @@ import type { NightEvent } from './timeline'
 import type { Issue } from './validation'
 import { coalitionName, majorityOf } from './coalition'
 import { DEFAULT_PARTIES, PAP } from '../data/parties'
+import { listAnd, plural, stripType } from './text'
 
 /** The party that held these voters in 2025 (notionally). */
 export function notionalHolder(pap0: number, mainOpp: string) {
@@ -40,10 +41,9 @@ export interface ReportInput {
 
 export interface SourceShare { id: string; name: string; share: number }
 
-export interface SeatReport {
+/** How one constituency on the new map relates to the GE2025 map (no votes involved). */
+export interface BoundarySeat {
   c: Constituency
-  r: SeatResult
-  forecast: SeatResult
   electors: number
   perMp: number
   deviation: number
@@ -54,6 +54,11 @@ export interface SeatReport {
   sources: SourceShare[]
   typeChanged: boolean
   renamed: boolean
+}
+
+export interface SeatReport extends BoundarySeat {
+  r: SeatResult
+  forecast: SeatResult
   /** notional 2025 holder of these voters */
   holder: string
   /** 2025 winner of the constituency most of these voters came from */
@@ -192,33 +197,38 @@ export interface Report {
 const pts = (v: number) => `${Math.abs(v).toFixed(1)} point${Math.abs(v).toFixed(1) === '1.0' ? '' : 's'}`
 const pc = (v: number) => `${(v * 100).toFixed(1)}%`
 const signed = (v: number) => `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(1)}`
-const stripType = (n: string) => n.replace(/ (GRC|SMC)$/i, '').trim().toLowerCase()
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null)
-const listAnd = (xs: string[]) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}`)
 
 export function winner2025(c: GE2025Data['constituencies'][number]) {
   return c.result[0]?.party ?? PAP
 }
 
-export function buildReport(inp: ReportInput): Report {
-  const { plan, result, projection, stats, contests, defaults, swings, ge, blocks, year } = inp
-  const partyMap = Object.fromEntries(inp.parties.map((p) => [p.id, p]))
-  const geById = new Map(ge.constituencies.map((c) => [c.id, c]))
-  const total = plan.reduce((s, c) => s + c.seats, 0)
-  const majority = majorityOf(total)
-  const twoThirds = Math.ceil((total * 2) / 3)
-  const forecastById = new Map(projection.seats.map((s) => [s.id, s]))
+export interface BoundaryCount { constituencies: number; smc: number; grc: number; seats: number; electors: number }
 
-  // 2025 constituency sizes on the selected register
+/** The boundary changes on their own: what happened to every new and every GE2025 constituency. */
+export interface BoundaryAnalysis {
+  seats: BoundarySeat[]
+  oldSeats: OldSeatFate[]
+  /** GE2025 constituency sizes on the selected register */
+  oldElectors: Record<string, number>
+  changed: boolean
+  count: BoundaryCount
+  count2025: BoundaryCount
+  unchanged: number
+  redrawn: number
+  created: number
+  votersMoved: number
+  quota: number
+  beyond: { p10: number; p20: number; p30: number }
+}
+
+export function analyseBoundaries(plan: Constituency[], stats: PlanStats, ge: GE2025Data, blocks: Block[], year: Year): BoundaryAnalysis {
+  const geById = new Map(ge.constituencies.map((c) => [c.id, c]))
   const oldElectors: Record<string, number> = {}
   for (const b of blocks) oldElectors[b.ed] = (oldElectors[b.ed] || 0) + electorsOf(b, year)
 
-  // --- per seat ---------------------------------------------------------------
-  const seats: SeatReport[] = plan.map((c, i) => {
-    const r = result.seats[i]
+  const seats: BoundarySeat[] = plan.map((c) => {
     const s = stats.byId[c.id]
-    const forecast = forecastById.get(c.id) ?? r
     const electors = s?.electors ?? 0
     const src = Object.entries(s?.sources ?? {}).sort((a, b) => b[1] - a[1])
     const sources = src.map(([id, e]) => ({ id, name: geById.get(id)?.name ?? id, share: electors ? e / electors : 0 }))
@@ -232,7 +242,74 @@ export function buildReport(inp: ReportInput): Report {
       if (status !== 'new') basedOn = id
     }
     const old = basedOn ? geById.get(basedOn) : undefined
-    const mainSrc = src[0] ? geById.get(src[0][0]) : undefined
+    return {
+      c, electors,
+      perMp: s?.perMp ?? 0,
+      deviation: s?.deviation ?? 0,
+      status, basedOn, sources,
+      typeChanged: !!old && old.type !== c.type,
+      renamed: !!old && stripType(old.name) !== stripType(c.name),
+    }
+  })
+
+  const destinations: Record<string, Record<string, number>> = {}
+  for (const s of seats) for (const [id, e] of Object.entries(stats.byId[s.c.id]?.sources ?? {})) (destinations[id] ||= {})[s.c.id] = e
+  const seatById = new Map(seats.map((s) => [s.c.id, s]))
+  const oldSeats: OldSeatFate[] = ge.constituencies.map((o) => {
+    const e = oldElectors[o.id] || 0
+    const into = Object.entries(destinations[o.id] ?? {}).sort((a, b) => b[1] - a[1])
+      .map(([id, v]) => ({ id, name: seatById.get(id)?.c.name ?? id, share: e ? v / e : 0 }))
+    const top = into[0] ? seatById.get(into[0].id) : undefined
+    let fate: OldSeatFate['fate'] = 'split'
+    if (top && top.basedOn === o.id) fate = top.status === 'unchanged' ? 'kept' : 'redrawn'
+    else if (into[0] && into[0].share >= REDRAWN_OVERLAP) fate = 'merged'
+    return { id: o.id, name: o.name, type: o.type, seats: o.seats, winner: winner2025(o), electors: e, fate, into }
+  })
+  const votersMoved = seats.reduce((n, s) => n + (s.basedOn ? s.electors - (stats.byId[s.c.id]?.sources[s.basedOn] ?? 0) : s.electors), 0)
+  const populated = seats.filter((s) => s.electors > 0)
+  const count = (cs: { type: string; seats: number }[], electors: number) => ({
+    constituencies: cs.length,
+    smc: cs.filter((c) => c.type === 'SMC').length,
+    grc: cs.filter((c) => c.type === 'GRC').length,
+    seats: cs.reduce((n, c) => n + c.seats, 0),
+    electors,
+  })
+  return {
+    seats, oldSeats, oldElectors,
+    changed: seats.some((s) => s.status !== 'unchanged' || s.renamed || s.typeChanged) || plan.length !== ge.constituencies.length,
+    count: count(plan, stats.assignedElectors),
+    count2025: count(ge.constituencies, Object.values(oldElectors).reduce((a, b) => a + b, 0)),
+    unchanged: seats.filter((s) => s.status === 'unchanged').length,
+    redrawn: seats.filter((s) => s.status === 'redrawn').length,
+    created: seats.filter((s) => s.status === 'new').length,
+    votersMoved,
+    quota: stats.quota,
+    beyond: {
+      p10: populated.filter((s) => Math.abs(s.deviation) > 0.1).length,
+      p20: populated.filter((s) => Math.abs(s.deviation) > 0.2).length,
+      p30: populated.filter((s) => Math.abs(s.deviation) > 0.3).length,
+    },
+  }
+}
+
+export function buildReport(inp: ReportInput): Report {
+  const { plan, result, projection, stats, contests, defaults, swings, ge, blocks, year } = inp
+  const partyMap = Object.fromEntries(inp.parties.map((p) => [p.id, p]))
+  const geById = new Map(ge.constituencies.map((c) => [c.id, c]))
+  const total = plan.reduce((s, c) => s + c.seats, 0)
+  const majority = majorityOf(total)
+  const twoThirds = Math.ceil((total * 2) / 3)
+  const forecastById = new Map(projection.seats.map((s) => [s.id, s]))
+
+  const bounds = analyseBoundaries(plan, stats, ge, blocks, year)
+
+  // --- per seat ---------------------------------------------------------------
+  const seats: SeatReport[] = bounds.seats.map((bs, i) => {
+    const { c } = bs
+    const r = result.seats[i]
+    const s = stats.byId[c.id]
+    const forecast = forecastById.get(c.id) ?? r
+    const mainSrc = bs.sources[0] ? geById.get(bs.sources[0].id) : undefined
     const holder = s ? notionalHolder(s.pap0, s.mainOpp) : PAP
     const contest = contests[c.id]
     const papIn = !r.walkover && PAP in r.shares
@@ -240,12 +317,7 @@ export function buildReport(inp: ReportInput): Report {
     const papForecast = papIn ? forecast.shares[PAP] ?? null : null
     const papResult = papIn ? r.shares[PAP] : null
     return {
-      c, r, forecast, electors,
-      perMp: s?.perMp ?? 0,
-      deviation: s?.deviation ?? 0,
-      status, basedOn, sources,
-      typeChanged: !!old && old.type !== c.type,
-      renamed: !!old && stripType(old.name) !== stripType(c.name),
+      ...bs, r, forecast,
       holder,
       sourceWinner: mainSrc ? winner2025(mainSrc) : null,
       gain: !r.walkover && r.winner !== holder,
@@ -288,20 +360,7 @@ export function buildReport(inp: ReportInput): Report {
   }
 
   // --- boundaries ----------------------------------------------------------------
-  const destinations: Record<string, Record<string, number>> = {}
-  for (const s of seats) for (const [id, e] of Object.entries(stats.byId[s.c.id]?.sources ?? {})) (destinations[id] ||= {})[s.c.id] = e
   const seatById = new Map(seats.map((s) => [s.c.id, s]))
-  const oldSeats: OldSeatFate[] = ge.constituencies.map((o) => {
-    const e = oldElectors[o.id] || 0
-    const into = Object.entries(destinations[o.id] ?? {}).sort((a, b) => b[1] - a[1])
-      .map(([id, v]) => ({ id, name: seatById.get(id)?.c.name ?? id, share: e ? v / e : 0 }))
-    const top = into[0] ? seatById.get(into[0].id) : undefined
-    let fate: OldSeatFate['fate'] = 'split'
-    if (top && top.basedOn === o.id) fate = top.status === 'unchanged' ? 'kept' : 'redrawn'
-    else if (into[0] && into[0].share >= REDRAWN_OVERLAP) fate = 'merged'
-    return { id: o.id, name: o.name, type: o.type, seats: o.seats, winner: winner2025(o), electors: e, fate, into }
-  })
-  const votersMoved = seats.reduce((n, s) => n + (s.basedOn ? s.electors - (stats.byId[s.c.id]?.sources[s.basedOn] ?? 0) : s.electors), 0)
   const populated = seats.filter((s) => s.electors > 0)
   const bySize = [...populated].sort((a, b) => b.deviation - a.deviation)
   const notionalSeats: Record<string, number> = {}
@@ -313,30 +372,19 @@ export function buildReport(inp: ReportInput): Report {
     const d = (notionalSeats[p] ?? 0) - (actualSeats2025[p] ?? 0)
     if (d) boundaryEffect[p] = d
   }
-  const count = (cs: { type: string; seats: number }[], electors: number) => ({
-    constituencies: cs.length,
-    smc: cs.filter((c) => c.type === 'SMC').length,
-    grc: cs.filter((c) => c.type === 'GRC').length,
-    seats: cs.reduce((n, c) => n + c.seats, 0),
-    electors,
-  })
   const boundaries = {
-    changed: seats.some((s) => s.status !== 'unchanged' || s.renamed || s.typeChanged) || plan.length !== ge.constituencies.length,
-    count: count(plan, stats.assignedElectors),
-    count2025: count(ge.constituencies, Object.values(oldElectors).reduce((a, b) => a + b, 0)),
-    unchanged: seats.filter((s) => s.status === 'unchanged').length,
-    redrawn: seats.filter((s) => s.status === 'redrawn').length,
-    created: seats.filter((s) => s.status === 'new').length,
-    oldSeats,
-    votersMoved,
-    quota: stats.quota,
+    changed: bounds.changed,
+    count: bounds.count,
+    count2025: bounds.count2025,
+    unchanged: bounds.unchanged,
+    redrawn: bounds.redrawn,
+    created: bounds.created,
+    oldSeats: bounds.oldSeats,
+    votersMoved: bounds.votersMoved,
+    quota: bounds.quota,
     largest: bySize[0] ?? null,
     smallest: bySize.at(-1) ?? null,
-    beyond: {
-      p10: populated.filter((s) => Math.abs(s.deviation) > 0.1).length,
-      p20: populated.filter((s) => Math.abs(s.deviation) > 0.2).length,
-      p30: populated.filter((s) => Math.abs(s.deviation) > 0.3).length,
-    },
+    beyond: bounds.beyond,
     issues: inp.issues.filter((i) => i.level !== 'info'),
     notionalSeats, actualSeats2025, boundaryEffect,
     notionalFlips: seats.filter((s) => s.sourceWinner && s.holder !== s.sourceWinner),

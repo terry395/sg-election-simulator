@@ -1,23 +1,15 @@
 import { useMemo, useState } from 'react'
-import { useStore, type Lens, type Tool } from '../state/store'
+import { useStore, type Lens } from '../state/store'
 import { useDerived } from '../state/derived'
 import { Button, Section, ShareBar, Stat, Swatch, fmt, pct } from '../components/ui'
-import { AlertTriangle, CheckCircle2, Eraser, Hand, Lasso, MousePointer2, PaintBucket, Paintbrush, Redo2, Trash2, Undo2, Wand2, XCircle, type LucideIcon } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Redo2, ScrollText, Trash2, Undo2, Wand2, XCircle } from 'lucide-react'
 import { DEMO_GROUPS } from '../model/swing'
 import { LENS_INFO } from '../map/useBlockColors'
 import { fmtDev } from '../model/validation'
 import { suggestName } from '../model/stats'
 import { AutoDrawPanel } from './AutoDrawPanel'
+import { TOOLS } from './tools'
 import { PAP } from '../data/parties'
-
-const TOOLS: { id: Tool; label: string; key: string; icon: LucideIcon; hint: string }[] = [
-  { id: 'inspect', label: 'Select', key: 'V', icon: MousePointer2, hint: 'Click an area to select its constituency' },
-  { id: 'paint', label: 'Paint', key: 'B', icon: Paintbrush, hint: 'Click or drag over areas to add them to the active constituency' },
-  { id: 'fill', label: 'Fill', key: 'G', icon: PaintBucket, hint: 'Click an area: it and every connected area of the same constituency join the active one' },
-  { id: 'lasso', label: 'Lasso', key: 'L', icon: Lasso, hint: 'Drag a freehand loop; every area inside joins the active constituency' },
-  { id: 'erase', label: 'Erase', key: 'E', icon: Eraser, hint: 'Click or drag to remove areas from their constituency' },
-  { id: 'pan', label: 'Pan', key: 'H', icon: Hand, hint: 'Drag to move the map (or hold Space with any tool)' },
-]
 
 const LENSES: { id: Lens; label: string }[] = [
   { id: 'constituency', label: 'Constituencies' },
@@ -71,7 +63,7 @@ export function DrawPanel() {
         )}
       </Section>
 
-      <Section title="Tools" right={
+      <Section title="Tools" className="phone:hidden" right={
         <div className="flex gap-1">
           <Button onClick={undo} disabled={!canUndo} title="Undo (Ctrl+Z)" aria-label="Undo"><Undo2 size={14} /></Button>
           <Button onClick={redo} disabled={!canRedo} title="Redo (Ctrl+Y)" aria-label="Redo"><Redo2 size={14} /></Button>
@@ -143,6 +135,11 @@ function Issues() {
         ))}
       </ul>
       {list.length > 4 && <button className="mt-1 text-[11px] text-sky-400" onClick={() => setOpen(!open)}>{open ? 'Show less' : `Show all ${list.length}`}</button>}
+      <button type="button" onClick={() => useStore.getState().setEbrcOpen(true)}
+        className="mt-2.5 flex w-full items-center gap-2 rounded-md border border-amber-500/50 bg-amber-500/10 px-3 py-2 text-left hover:bg-amber-500/20">
+        <ScrollText size={17} className="shrink-0 text-amber-300" aria-hidden />
+        <span><span className="block text-sm font-semibold">Generate EBRC report</span><span className="block text-[11px] text-slate-300">A mock boundaries report for this map, styled like the real one (view only)</span></span>
+      </button>
     </Section>
   )
 }

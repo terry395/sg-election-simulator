@@ -1,12 +1,24 @@
 @import "tailwindcss";
 @import "maplibre-gl/dist/maplibre-gl.css";
 
+/* phone layout: narrow screens, and short touch screens (phones held sideways) */
+@custom-variant phone {
+  @media (max-width: 767px) { @slot; }
+  @media (max-height: 500px) and (pointer: coarse) { @slot; }
+}
+@custom-variant desk {
+  @media (min-width: 768px) and (min-height: 501px) { @slot; }
+  @media (min-width: 768px) and (pointer: fine) { @slot; }
+}
+
 @theme {
   --font-sans: "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, "Cascadia Code", Consolas, monospace;
 }
 
 html, body, #root { height: 100%; }
+#root { height: 100dvh; }
+body { overscroll-behavior: none; }
 body { @apply bg-slate-950 text-slate-100 antialiased; margin: 0; }
 .tabular { font-variant-numeric: tabular-nums; }
 .scroll-thin { scrollbar-width: thin; scrollbar-color: #334155 transparent; }
@@ -18,3 +30,51 @@ input[type=range] { accent-color: #f43f5e; }
 .news-in { animation: news-in .35s ease-out; }
 @keyframes seat-pop { 0% { transform: scale(1); } 40% { transform: scale(1.9); } 100% { transform: scale(1); } }
 .seat-pop { animation: seat-pop .6s ease-out; }
+
+/* phones (same query as the phone variant and useIsMobile) */
+@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
+  /* 16px stops iOS zooming the page when a field is focused */
+  input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=color]), select, textarea { font-size: 16px; }
+  input[type=range] { height: 28px; }
+  /* keep the map attribution above the bottom sheet */
+  .maplibregl-ctrl-bottom-right, .maplibregl-ctrl-bottom-left { bottom: var(--sheet-h, 0px); }
+  .maplibregl-ctrl-group button { width: 36px; height: 36px; }
+}
+
+/* ---------------------------------------------------------------- mock EBRC report: a printed White Paper look */
+@layer components {
+  .ebrc-doc { font-family: "Times New Roman", Times, Georgia, serif; }
+  .ebrc-page {
+    position: relative; background: #fdfdfb; color: #111; font-size: 15px; line-height: 1.55;
+    padding: 64px 76px 56px; box-shadow: 0 6px 28px rgb(0 0 0 / .45); border-radius: 2px;
+    min-height: 1000px;
+  }
+  .ebrc-running {
+    position: absolute; top: 18px; left: 0; right: 0; text-align: center;
+    font-size: 10px; letter-spacing: .28em; text-transform: uppercase; color: #9a9a9a;
+  }
+  .ebrc-folio { margin-top: 40px; text-align: center; font-size: 13px; }
+  .ebrc-title { text-align: center; font-weight: 700; font-size: 16px; letter-spacing: .04em; }
+  .ebrc-heading { text-align: center; font-weight: 700; font-variant: small-caps; font-size: 17px; letter-spacing: .03em; margin-bottom: 10px; }
+  .ebrc-subheading { font-weight: 700; font-style: italic; margin: 16px 0 6px; }
+  .ebrc-paras > li { display: grid; grid-template-columns: 2.4em 1fr; text-align: justify; hyphens: auto; margin-bottom: 10px; }
+  .ebrc-items { margin-top: 6px; }
+  .ebrc-items > li { display: grid; grid-template-columns: 2.2em 1fr; margin-bottom: 4px; text-align: justify; }
+  .ebrc-table { border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .ebrc-table th, .ebrc-table td { border: 1px solid #111; padding: 3px 7px; text-align: right; }
+  .ebrc-table th { font-weight: 700; background: #efefea; text-align: center; }
+  .ebrc-swatch { display: inline-block; width: 18px; height: 12px; border: 1px solid #111; background: #fff; }
+  .ebrc-swatch-grc { background: repeating-linear-gradient(45deg, #fff 0 2px, #b5b5b5 2px 3px); }
+  .ebrc-print-note { display: none; }
+  @media (max-width: 767px) {
+    .ebrc-page { padding: 40px 18px 28px; font-size: 13.5px; min-height: 0; }
+    .ebrc-paras > li { grid-template-columns: 2em 1fr; text-align: left; }
+    .ebrc-table { font-size: 11px; }
+    .ebrc-table th, .ebrc-table td { padding: 2px 4px; }
+  }
+}
+/* view-only: the mock report is not for printing or saving as PDF */
+@media print {
+  .ebrc-doc { display: none !important; }
+  .ebrc-print-note { display: block; padding: 2rem; color: #000; font: 14px/1.5 Georgia, serif; }
+}

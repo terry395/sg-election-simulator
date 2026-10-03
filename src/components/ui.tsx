@@ -10,7 +10,7 @@ export function Button({ className = '', variant = 'ghost', ...p }: ButtonHTMLAt
     subtle: 'bg-slate-800 hover:bg-slate-700 text-slate-100 border-slate-700',
     ghost: 'bg-transparent hover:bg-slate-800 text-slate-200 border-slate-700',
   }[variant]
-  return <button {...p} className={`inline-flex items-center justify-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition disabled:opacity-40 disabled:pointer-events-none ${v} ${className}`} />
+  return <button {...p} className={`inline-flex items-center justify-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition phone:min-h-9 phone:px-3 disabled:opacity-40 disabled:pointer-events-none ${v} ${className}`} />
 }
 
 export function Section({ title, right, children, className = '' }: { title: ReactNode; right?: ReactNode; children: ReactNode; className?: string }) {
