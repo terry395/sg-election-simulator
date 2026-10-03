@@ -5,13 +5,15 @@ import type { Contest, Party } from '../types'
 import { useStore } from './store'
 import { computeStats, type PlanStats } from '../model/stats'
 import { validate, type Issue } from '../model/validation'
-import { defaultContests } from '../model/contests'
+import { defaultContests, withoutLeaders } from '../model/contests'
 import { runElection, type ElectionResult } from '../model/swing'
 
 export interface Derived {
   stats: PlanStats
   issues: Issue[]
   contests: Record<string, Contest>
+  /** contests with leaders kept even when leaders are switched off (the base for edits) */
+  editable: Record<string, Contest>
   /** contests before any user edits (used for leader-effect baselines) */
   defaults: Record<string, Contest>
   partyMap: Record<string, Party>
@@ -32,16 +34,20 @@ export function DerivedProvider({ children }: { children: ReactNode }) {
   const rules = useStore((s) => s.rules)
   const overrides = useStore((s) => s.contestOverrides)
   const swings = useStore((s) => s.swings)
+  const useLeaders = useStore((s) => s.useLeaders)
 
   const stats = useMemo(() => computeStats(plan, data.blocks, ctx, parties, year), [plan, data, ctx, parties, year])
   const issues = useMemo(() => validate(plan, stats, data.blocks, rules), [plan, stats, data, rules])
   const partyMap = useMemo(() => Object.fromEntries(parties.map((p) => [p.id, p])), [parties])
-  const defaults = useMemo(() => defaultContests(plan, stats, data.ge), [plan, stats, data])
-  const contests = useMemo(() => {
+  const rawDefaults = useMemo(() => defaultContests(plan, stats, data.ge), [plan, stats, data])
+  const editable = useMemo(() => {
     const out: Record<string, Contest> = {}
-    for (const c of plan.constituencies) out[c.id] = overrides[c.id] ?? defaults[c.id]
+    for (const c of plan.constituencies) out[c.id] = overrides[c.id] ?? rawDefaults[c.id]
     return out
-  }, [plan, overrides, defaults])
+  }, [plan, overrides, rawDefaults])
+  // "parties only": everything downstream sees no leaders, but the user's picks are kept for later
+  const defaults = useMemo(() => (useLeaders ? rawDefaults : withoutLeaders(rawDefaults)), [rawDefaults, useLeaders])
+  const contests = useMemo(() => (useLeaders ? editable : withoutLeaders(editable)), [editable, useLeaders])
   const projection = useMemo(() => runElection(plan.constituencies, stats.byId, contests, swings, partyMap), [plan, stats, contests, swings, partyMap])
 
   const membersOf = useMemo(() => {
@@ -73,8 +79,8 @@ export function DerivedProvider({ children }: { children: ReactNode }) {
   }, [plan.constituencies, membersOf, data, stats])
 
   const value = useMemo(
-    () => ({ stats, issues, contests, defaults, partyMap, projection, districts, labels, membersOf }),
-    [stats, issues, contests, defaults, partyMap, projection, districts, labels, membersOf],
+    () => ({ stats, issues, contests, editable, defaults, partyMap, projection, districts, labels, membersOf }),
+    [stats, issues, contests, editable, defaults, partyMap, projection, districts, labels, membersOf],
   )
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

@@ -5,7 +5,7 @@ import { Button, PartyBadge, Section, Slider, pct } from '../components/ui'
 import { PAP } from '../data/parties'
 import type { Contest } from '../types'
 import { candidatesByParty, leaderBonus, leaderRole, type Candidate } from '../data/candidates'
-import { defaultLeaders } from '../model/contests'
+import { defaultLeaders, usedLeaders } from '../model/contests'
 import { X } from 'lucide-react'
 
 export function ContestPanel() {
@@ -16,7 +16,9 @@ export function ContestPanel() {
   const setContest = useStore((s) => s.setContest)
   const resetContests = useStore((s) => s.resetContests)
   const setAll = useStore((s) => s.setAllContests)
-  const { contests, defaults, partyMap, stats } = useDerived()
+  const useLeaders = useStore((s) => s.useLeaders)
+  const setUseLeaders = useStore((s) => s.setUseLeaders)
+  const { contests, editable, defaults, partyMap, stats } = useDerived()
   const ge = useStore((s) => s.data)!.ge
   const candidates = useMemo(() => candidatesByParty(ge), [ge])
   const [filter, setFilter] = useState('')
@@ -27,13 +29,28 @@ export function ContestPanel() {
   const contested = Object.values(contests).filter((c) => c.parties.length > 1).length
   const straightFights = () => {
     const out: Record<string, Contest> = {}
-    for (const [id, c] of Object.entries(contests)) {
+    for (const [id, c] of Object.entries(editable)) {
       const opp = c.parties.filter((p) => p !== PAP).sort((a, b) => (partyMap[b]?.strength ?? 0) - (partyMap[a]?.strength ?? 0))
       out[id] = { ...c, parties: c.parties.includes(PAP) ? [PAP, ...opp.slice(0, 1)] : opp.slice(0, 1) }
     }
     setAll(out)
   }
   const partySeats = (p: string) => plan.constituencies.filter((c) => contests[c.id]?.parties.includes(p)).reduce((s, c) => s + c.seats, 0)
+  // people leading more than one seat for the same party: party → name → seat ids
+  const leaderSeats = useMemo(() => {
+    const m: Record<string, Record<string, string[]>> = {}
+    if (!useLeaders) return m
+    for (const c of plan.constituencies) {
+      const ct = contests[c.id]
+      for (const p of ct?.parties ?? []) {
+        const name = ct.leaders?.[p]
+        if (name) ((m[p] ||= {})[name] ||= []).push(c.id)
+      }
+    }
+    return m
+  }, [plan, contests, useLeaders])
+  const repeated = Object.values(leaderSeats).reduce((n, byName) => n + Object.values(byName).filter((ids) => ids.length > 1).length, 0)
+  const nameOf = (id: string) => plan.constituencies.find((c) => c.id === id)?.name ?? id
   const list = plan.constituencies.filter((c) => c.name.toLowerCase().includes(filter.toLowerCase())).sort((a, b) => a.name.localeCompare(b.name))
 
   return (
@@ -44,6 +61,13 @@ export function ContestPanel() {
           <Button onClick={resetContests}>Reset to defaults</Button>
           <Button onClick={straightFights} title="Keep only the strongest opposition party in each seat">Straight fights only</Button>
         </div>
+        <label className="mt-2 flex cursor-pointer items-start gap-2 rounded-md border border-slate-800 p-2 text-xs hover:bg-slate-900">
+          <input type="checkbox" checked={useLeaders} onChange={(e) => setUseLeaders(e.target.checked)} className="mt-0.5" />
+          <span><b>Pick anchor leaders</b><br /><span className="text-slate-400">{useLeaders
+            ? 'Each party gets a suggested team leader per seat (never the same person twice), with a vote effect you can change.'
+            : 'Off: only choose which parties stand. No team leaders or leader effects. Your earlier picks come back if you switch this on again.'}</span></span>
+        </label>
+        {repeated > 0 && <p className="mt-1 text-[11px] text-amber-300">{repeated === 1 ? '1 person leads' : `${repeated} people lead`} more than one seat. Open the seats marked “also leads” to pick someone else.</p>}
         <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className="text-[11px] text-slate-500">Seats contested:</span>
           {parties.filter((p) => p.id !== PAP).map((p) => {
@@ -57,14 +81,15 @@ export function ContestPanel() {
         <ul className="space-y-1">
           {list.map((c) => {
             const ct = contests[c.id]
+            const base = editable[c.id]
             const s = stats.byId[c.id]
             const open = activeId === c.id
             const toggle = (p: string) => {
-              const has = ct.parties.includes(p)
-              const next = has ? ct.parties.filter((x) => x !== p) : [...ct.parties, p]
-              const leaders = { ...ct.leaders }
-              if (!has && !leaders[p] && s) Object.assign(leaders, defaultLeaders([p], s.sources, ge))
-              setContest(c.id, { ...ct, parties: next, leaders })
+              const has = base.parties.includes(p)
+              const next = has ? base.parties.filter((x) => x !== p) : [...base.parties, p]
+              const leaders = { ...base.leaders }
+              if (useLeaders && !has && !leaders[p] && s) Object.assign(leaders, defaultLeaders([p], s.sources, ge, usedLeaders(contests, c.id)))
+              setContest(c.id, { ...base, parties: next, leaders })
             }
             // a leader's effect is measured against the party's 2025 anchor for these voters
             const setLeader = (p: string, name: string) => {
@@ -72,7 +97,7 @@ export function ContestPanel() {
               const bonus = name.trim() ? leaderBonus(name, p) - baseline : ct.star?.[p] ?? 0
               setContest(c.id, { ...ct, leaders: { ...ct.leaders, [p]: name }, star: { ...ct.star, [p]: Math.round(bonus * 2) / 2 } })
             }
-            const leaderLine = ct.parties.map((p) => ct.leaders?.[p] ? `${p}: ${ct.leaders[p]}` : null).filter(Boolean).join(' · ')
+            const leaderLine = !useLeaders ? '' : ct.parties.map((p) => ct.leaders?.[p] ? `${p}: ${ct.leaders[p]}` : null).filter(Boolean).join(' · ')
             return (
               <li key={c.id} className={`rounded-md border ${open ? 'border-rose-500/60 bg-slate-900' : 'border-slate-800'}`}>
                 <button className="flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs" onClick={() => setActive(open ? null : c.id)}>
@@ -89,8 +114,8 @@ export function ContestPanel() {
                     <div className="mt-1.5 flex flex-wrap gap-1">
                       {parties.map((p) => <PartyBadge key={p.id} party={p} active={ct.parties.includes(p.id)} onClick={() => toggle(p.id)} />)}
                     </div>
-                    {ct.parties.length > 0 && <div className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Anchor leaders</div>}
-                    {ct.parties.map((p) => {
+                    {useLeaders && ct.parties.length > 0 && <div className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Anchor leaders</div>}
+                    {useLeaders && ct.parties.map((p) => {
                       const name = ct.leaders?.[p] ?? ''
                       const role = leaderRole(name, p)
                       const hasList = (candidates[p]?.length ?? 0) > 0
@@ -101,6 +126,9 @@ export function ContestPanel() {
                             setCustom={(v) => setCustomKeys((s) => { const n = new Set(s); if (v) n.add(`${c.id}:${p}`); else n.delete(`${c.id}:${p}`); return n })}
                             onChange={(v) => setLeader(p, v)} />
                           {role && <div className="mt-0.5 text-[10px] text-sky-300">{role}</div>}
+                          {name && (leaderSeats[p]?.[name]?.length ?? 0) > 1 && (
+                            <div className="mt-0.5 text-[10px] text-amber-300">Also leads {leaderSeats[p][name].filter((id) => id !== c.id).map(nameOf).join(', ')}</div>
+                          )}
                           <Slider label={<span className="text-slate-400">Leader effect vs 2025 <span className="text-slate-500">(auto-set from the leader; adjust freely)</span></span>}
                             value={ct.star?.[p] ?? 0} min={-8} max={8} step={0.5}
                             onChange={(v) => setContest(c.id, { ...ct, star: { ...ct.star, [p]: v } })} />

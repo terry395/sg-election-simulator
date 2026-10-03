@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { FileText, Info, ScrollText, X } from 'lucide-react'
+import { FileText, Info, Newspaper, ScrollText, X } from 'lucide-react'
 import { useStore } from '../state/store'
 import { useDerived } from '../state/derived'
 import { useNight } from '../state/night'
@@ -76,21 +76,27 @@ export function ElectionReport() {
   return <ReportView />
 }
 
-function ReportView() {
+/** The post-night report for the current election night (shared with the mock newspaper article). */
+export function useNightReport(): Report {
   const night = useNight()
-  const { stats, issues, contests, defaults, partyMap, projection } = useDerived()
+  const { stats, issues, contests, defaults, projection } = useDerived()
   const swings = useStore((s) => s.swings)
   const parties = useStore((s) => s.parties)
   const year = useStore((s) => s.year)
   const data = useStore((s) => s.data)!
-  const setActive = useStore((s) => s.setActive)
-  const close = () => night.setReportOpen(false)
-  const body = useRef<HTMLDivElement>(null)
-
-  const report = useMemo(() => buildReport({
+  return useMemo(() => buildReport({
     plan: night.plan!, result: night.result!, projection, events: night.events, mode: night.mode, coalition: night.coalition,
     stats, issues, contests, defaults, swings, parties, ge: data.ge, blocks: data.blocks, year,
   }), [night.plan, night.result, projection, night.events, night.mode, night.coalition, stats, issues, contests, defaults, swings, parties, data, year])
+}
+
+function ReportView() {
+  const night = useNight()
+  const { partyMap } = useDerived()
+  const setActive = useStore((s) => s.setActive)
+  const close = () => night.setReportOpen(false)
+  const body = useRef<HTMLDivElement>(null)
+  const report = useNightReport()
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') useNight.getState().setReportOpen(false) }
@@ -112,7 +118,13 @@ function ReportView() {
             <h2 className="text-base font-bold leading-tight">Election night report</h2>
             <p className="text-[11px] text-slate-400">Your simulated GE2030 · {night.mode === 'surprise' ? 'realistic night with random surprises' : 'exactly your forecast'} · {report.summary.total} seats · run {night.seed}</p>
           </div>
-          <button onClick={close} className="text-slate-400 hover:text-white" aria-label="Close report"><X size={20} /></button>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <button onClick={() => night.setNewsOpen('en')} className="inline-flex items-center gap-1 rounded-md border border-slate-700 px-2 py-1 text-[11px] text-slate-200 hover:bg-slate-800" title="Mock Straits Times article">
+              <Newspaper size={13} aria-hidden /> <span className="phone:hidden">News article</span>
+            </button>
+            <button onClick={() => night.setNewsOpen('zh')} className="rounded-md border border-slate-700 px-2 py-1 text-[11px] text-slate-200 hover:bg-slate-800" title="Mock Lianhe Zaobao article (Mandarin)">中文</button>
+            <button onClick={close} className="text-slate-400 hover:text-white" aria-label="Close report"><X size={20} /></button>
+          </div>
         </div>
         <nav className="scroll-thin flex shrink-0 gap-1 overflow-x-auto border-b border-slate-800 px-3 py-1.5" aria-label="Report sections">
           {SECTIONS.map((s) => (

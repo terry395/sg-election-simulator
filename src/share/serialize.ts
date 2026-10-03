@@ -8,6 +8,8 @@ export interface SharedState {
   swings: Swings
   year: Year
   customParties: Party[]
+  /** false = parties only, no anchor leaders (missing in older links = true) */
+  useLeaders?: boolean
 }
 
 /**
@@ -37,6 +39,7 @@ export function encodeState(s: SharedState): string {
     s: s.swings,
     y: s.year,
     p: s.customParties,
+    ...(s.useLeaders === false ? { l: 0 } : {}),
   }
   return compressToEncodedURIComponent(JSON.stringify(payload))
 }
@@ -58,6 +61,7 @@ export function decodeState(str: string, blockCount: number): SharedState | null
       swings: { ...DEFAULT_SWINGS, ...p.s },
       year: p.y === 2030 ? 2030 : 2025,
       customParties: p.p ?? [],
+      useLeaders: p.l !== 0,
     }
   } catch {
     return null

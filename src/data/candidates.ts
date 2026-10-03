@@ -112,13 +112,18 @@ export function leaderRole(name: string | undefined, party: string): string | un
   return NOTABLE.find((x) => x.party === party && (x.name === name || name.includes(x.match)))?.role
 }
 
-/** The anchor a party fielded in a GE2025 constituency: its best-known member, else the first listed. */
-export function anchor2025(ge: GE2025Data, edId: string, party: string): string | undefined {
+/** A party's GE2025 team in a constituency: best-known members first, then in ELD order. */
+export function team2025(ge: GE2025Data, edId: string, party: string): string[] {
   const c = ge.constituencies.find((x) => x.id === edId)
   const r = c?.result.find((x) => x.party === party)
-  if (!r || !r.candidates.length) return undefined
-  const ranked = r.candidates
-    .map((raw) => ({ raw, n: notableFor(raw, party) }))
-    .sort((a, b) => (b.n?.bonus ?? 0) - (a.n?.bonus ?? 0))
-  return ranked[0].n?.name ?? tidy(ranked[0].raw)
+  if (!r) return []
+  return r.candidates
+    .map((raw, i) => ({ raw, i, n: notableFor(raw, party) }))
+    .sort((a, b) => (b.n?.bonus ?? 0) - (a.n?.bonus ?? 0) || a.i - b.i)
+    .map((x) => x.n?.name ?? tidy(x.raw))
+}
+
+/** The anchor a party fielded in a GE2025 constituency: its best-known member, else the first listed. */
+export function anchor2025(ge: GE2025Data, edId: string, party: string): string | undefined {
+  return team2025(ge, edId, party)[0]
 }

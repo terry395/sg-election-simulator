@@ -6,7 +6,9 @@ import { NOTABLE, anchor2025, candidatesByParty, leaderBonus } from './candidate
 import { PARTY_INFO } from './partyInfo'
 import { CONSTITUENCY_PALETTE, DEFAULT_PARTIES } from './parties'
 import { buildBlockContext, computeStats, ge2025Plan } from '../model/stats'
-import { defaultContests } from '../model/contests'
+import { defaultContests, withoutLeaders } from '../model/contests'
+import { redistrict, DEFAULT_OPTIONS } from '../model/redistrict'
+import type { Contest } from '../types'
 import { projectSeat, DEFAULT_SWINGS } from '../model/swing'
 import { decodeState, encodeState } from '../share/serialize'
 
@@ -64,4 +66,46 @@ describe('leaders in contests', () => {
     const back = decodeState(encodeState({ plan, contests: edited, swings: DEFAULT_SWINGS, year: 2025, customParties: [] }), blocks.length)
     expect(back?.contests.EC.leaders).toEqual({ PAP: 'My Custom Name', WP: 'Pritam Singh' })
   })
+
+  it('a parties-only switch survives the share link; older links keep leaders on', () => {
+    const st = { plan, contests, swings: DEFAULT_SWINGS, year: 2025 as const, customParties: [] }
+    expect(decodeState(encodeState({ ...st, useLeaders: false }), blocks.length)?.useLeaders).toBe(false)
+    expect(decodeState(encodeState(st), blocks.length)?.useLeaders).toBe(true)
+  })
+
+  it('parties only: no leaders or leader effects, GE2025 baseline unchanged', () => {
+    const edited = { ...contests, EC: { ...contests.EC, star: { WP: 3 } } }
+    const off = withoutLeaders(edited)
+    expect(Object.values(off).every((c) => !Object.keys(c.leaders ?? {}).length && !Object.keys(c.star).length)).toBe(true)
+    const c = plan.constituencies.find((x) => x.id === 'EC')!
+    expect(projectSeat(c, stats.byId.EC, off.EC, DEFAULT_SWINGS, parties).shares).toEqual(projectSeat(c, stats.byId.EC, contests.EC, DEFAULT_SWINGS, parties).shares)
+  })
+})
+
+const repeats = (cs: Record<string, Contest>) => {
+  const seen = new Map<string, number>()
+  for (const c of Object.values(cs)) {
+    for (const p of c.parties) {
+      const k = `${p}:${c.leaders?.[p] ?? ''}`
+      if (c.leaders?.[p]) seen.set(k, (seen.get(k) ?? 0) + 1)
+    }
+  }
+  return [...seen].filter(([, n]) => n > 1).map(([k]) => k)
+}
+
+describe('default leaders on a redrawn map', () => {
+  it('never lead more than one seat each', () => {
+    const ctx = buildBlockContext(blocks, ge)
+    const ge25 = ge2025Plan(blocks, ge, CONSTITUENCY_PALETTE)
+    const stats25 = computeStats(ge25, blocks, ctx, DEFAULT_PARTIES, 2025)
+    expect(repeats(defaultContests(ge25, stats25, ge))).toEqual([])
+    for (const method of ['ebrc', 'compact'] as const) {
+      const { plan } = redistrict(blocks, ge, ge25, { ...DEFAULT_OPTIONS, method, seed: 7 })
+      const stats = computeStats(plan, blocks, ctx, DEFAULT_PARTIES, 2025)
+      const cs = defaultContests(plan, stats, ge)
+      expect(repeats(cs)).toEqual([])
+      // the best-known figure still anchors the seat most of their old voters moved to
+      expect(Object.values(cs).filter((c) => c.leaders?.PAP === 'Lawrence Wong').length).toBe(1)
+    }
+  }, 120000)
 })

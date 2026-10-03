@@ -346,6 +346,14 @@ function FinalSummary({ plan, partyMap }: { plan: Constituency[]; partyMap: Reco
       <Button variant="primary" className="mb-2 w-full py-2 text-sm" onClick={() => useNight.getState().setReportOpen(true)}>
         <FileText size={15} aria-hidden /> Read the election report
       </Button>
+      <div className="mb-2 grid grid-cols-2 gap-1.5">
+        <Button variant="subtle" onClick={() => useNight.getState().setNewsOpen('en')} title="A mock newspaper write-up of your night, in English">
+          <Newspaper size={14} aria-hidden /> The Straits Times (mock)
+        </Button>
+        <Button variant="subtle" onClick={() => useNight.getState().setNewsOpen('zh')} title="A mock newspaper write-up of your night, in Mandarin">
+          <Newspaper size={14} aria-hidden /> 联合早报（模拟）
+        </Button>
+      </div>
       <div className="rounded-md bg-gradient-to-r from-slate-800 to-slate-900 p-3">
         <div className="text-base font-bold">{verdict}</div>
         <div className="text-xs text-slate-300">

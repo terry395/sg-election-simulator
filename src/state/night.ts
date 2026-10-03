@@ -23,8 +23,11 @@ interface NightState {
   mode: NightMode
   /** the post-night report is open */
   reportOpen: boolean
+  /** the mock newspaper article is open, in this language */
+  newsOpen: 'en' | 'zh' | null
   setCoalition: (c: string[] | null) => void
   setReportOpen: (v: boolean) => void
+  setNewsOpen: (v: 'en' | 'zh' | null) => void
   start: (plan: Constituency[], result: ElectionResult, events: NightEvent[], seed: number, mode?: NightMode) => void
   setPlaying: (v: boolean) => void
   setSpeed: (v: number) => void
@@ -60,9 +63,11 @@ export const useNight = create<NightState>((set, get) => ({
   coalition: null,
   mode: 'surprise',
   reportOpen: false,
+  newsOpen: null,
   setCoalition: (coalition) => set({ coalition }),
   setReportOpen: (reportOpen) => set({ reportOpen }),
-  start: (plan, result, events, seed, mode = 'surprise') => set({ plan, result, events, seed, mode, t: -5, cursor: 0, revealed: {}, playing: true, coalition: null, reportOpen: false }),
+  setNewsOpen: (newsOpen) => set({ newsOpen }),
+  start: (plan, result, events, seed, mode = 'surprise') => set({ plan, result, events, seed, mode, t: -5, cursor: 0, revealed: {}, playing: true, coalition: null, reportOpen: false, newsOpen: null }),
   setPlaying: (playing) => set({ playing }),
   setSpeed: (speed) => set({ speed }),
   advance: (dt) => {
@@ -84,7 +89,7 @@ export const useNight = create<NightState>((set, get) => ({
     const e = s.events[s.cursor]
     if (e) set(applyUntil(s, e.t))
   },
-  reset: () => set({ result: null, plan: null, events: [], t: -5, cursor: 0, revealed: {}, playing: false, coalition: null, reportOpen: false }),
+  reset: () => set({ result: null, plan: null, events: [], t: -5, cursor: 0, revealed: {}, playing: false, coalition: null, reportOpen: false, newsOpen: null }),
 }))
 
 if (import.meta.env.DEV) (window as unknown as { __night: typeof useNight }).__night = useNight

@@ -18,6 +18,7 @@ import { DISCLAIMER_FULL, DISCLAIMER_SHORT } from './data/disclaimer'
 import { PartyDrawer } from './components/PartyDrawer'
 import { ElectionReport } from './components/ElectionReport'
 import { EbrcReport } from './components/EbrcReport'
+import { NewsArticle } from './components/NewsArticle'
 import { decodeState, encodeState, type SharedState } from './share/serialize'
 import { DEFAULT_PARTIES } from './data/parties'
 
@@ -145,6 +146,7 @@ function Shell() {
       <BottomTabs />
       <ElectionReport />
       <EbrcReport />
+      <NewsArticle />
     </div>
   )
 }
@@ -203,6 +205,7 @@ function currentState(): SharedState {
     swings: s.swings,
     year: s.year,
     customParties: s.parties.filter((p) => p.custom || JSON.stringify(p) !== JSON.stringify(DEFAULT_PARTIES.find((d) => d.id === p.id))),
+    useLeaders: s.useLeaders,
   }
 }
 
@@ -212,12 +215,13 @@ function useAutosave() {
   const swings = useStore((s) => s.swings)
   const year = useStore((s) => s.year)
   const parties = useStore((s) => s.parties)
+  const useLeaders = useStore((s) => s.useLeaders)
   useEffect(() => {
     const t = setTimeout(() => {
       try { localStorage.setItem(STORAGE_KEY, encodeState(currentState())) } catch { /* ignore */ }
     }, 600)
     return () => clearTimeout(t)
-  }, [plan, contestOverrides, swings, year, parties])
+  }, [plan, contestOverrides, swings, year, parties, useLeaders])
 }
 
 /** One-time invitation to read the beginner guide. */

@@ -34,6 +34,8 @@ interface State {
   parties: Party[]
   /** only user-edited contests are stored; the rest follow defaults */
   contestOverrides: Record<string, Contest>
+  /** pick anchor leaders per seat (off = parties only, no leaders or leader effects) */
+  useLeaders: boolean
   swings: Swings
   /** party whose information card is open (null = closed) */
   partyInfo: string | null
@@ -69,6 +71,7 @@ interface State {
   setContest: (id: string, c: Contest) => void
   resetContests: () => void
   setAllContests: (c: Record<string, Contest>) => void
+  setUseLeaders: (v: boolean) => void
   updateParty: (id: string, patch: Partial<Party>) => void
   addParty: (p: Party) => void
   removeParty: (id: string) => void
@@ -102,6 +105,7 @@ export const useStore = create<State>((set, get) => ({
   selectedBlock: null,
   parties: DEFAULT_PARTIES,
   contestOverrides: {},
+  useLeaders: true,
   swings: DEFAULT_SWINGS,
   partyInfo: null,
   ebrcOpen: false,
@@ -199,6 +203,7 @@ export const useStore = create<State>((set, get) => ({
   setContest: (id, c) => set((s) => ({ contestOverrides: { ...s.contestOverrides, [id]: c } })),
   resetContests: () => set({ contestOverrides: {} }),
   setAllContests: (c) => set({ contestOverrides: c }),
+  setUseLeaders: (useLeaders) => set({ useLeaders }),
   updateParty: (id, patch) => set((s) => ({ parties: s.parties.map((p) => (p.id === id ? { ...p, ...patch } : p)) })),
   addParty: (p) => set((s) => ({ parties: [...s.parties, p] })),
   removeParty: (id) =>
@@ -215,6 +220,7 @@ export const useStore = create<State>((set, get) => ({
     set((s) => ({
       plan: st.plan,
       contestOverrides: st.contests,
+      useLeaders: st.useLeaders ?? true,
       swings: st.swings,
       year: st.year,
       parties: [
