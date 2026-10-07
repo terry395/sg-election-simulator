@@ -3,6 +3,8 @@ import type { Plan, Year } from '../../types'
 export type Method = 'ebrc' | 'compact' | 'custom' | 'gerrymander'
 export type GerryGoal = 'pap' | 'opposition' | 'competitive'
 export type GrcSize = 4 | 5 | 'mixed'
+/** how EBRC mode treats opposition-held constituencies: keep as-is, small changes only, or redraw freely */
+export type OppMode = 'lock' | 'minor' | 'free'
 
 export interface RedistrictOptions {
   method: Method
@@ -19,6 +21,9 @@ export interface RedistrictOptions {
   // ebrc
   startFrom: 'ge2025' | 'current'
   keepNames: boolean
+  oppMode: OppMode
+  /** auto = re-apportion seats among existing ones; choose = exact SMC count and GRCs by size (smcCount, grcCounts) */
+  ebrcMix: 'auto' | 'choose'
   // gerrymander
   goal: GerryGoal
 }
@@ -30,6 +35,10 @@ export interface DistrictSpec {
   baseId?: string
   name?: string
   color?: string
+  /** opposition-held seat that keeps its exact boundaries */
+  locked?: boolean
+  /** opposition-held seat that may only change a little */
+  opp?: boolean
 }
 
 export interface RedistrictReport {
@@ -47,6 +56,10 @@ export interface RedistrictReport {
   oppSeats: number
   /** seats where the notional GE2025 result is within 5 points of 50-50 */
   competitiveSeats: number
+  /** opposition-held seats that were kept or protected (EBRC mode) */
+  protected: string[]
+  /** explains when protected seats did not fit the requested mix */
+  mixNote?: string
   ms: number
 }
 

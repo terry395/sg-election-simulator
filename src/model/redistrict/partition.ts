@@ -33,7 +33,9 @@ export interface EngineInput {
 
 /** Land with no voters still counts a little towards shape, so districts don't sprawl over it. */
 const EMPTY_WEIGHT = 400
-const sigmoid = (z: number) => 1 / (1 + Math.exp(-z))
+/** Change-penalty multiplier for opposition seats in "minor changes only" mode. */
+const OPP_CHANGE = 15
+const sigmoid =(z: number) => 1 / (1 + Math.exp(-z))
 
 export class Partition {
   readonly D: number
@@ -113,9 +115,18 @@ export class Partition {
     this.cost[d] = this.districtCost(d, this.E[d], this.P[d], this.SW[d], this.SX[d], this.SY[d], this.SQ[d], this.distinct[d])
   }
 
+  /** Districts whose boundaries may not change at all (opposition seats left untouched). */
+  isLocked(d: number) {
+    return !!this.specs[d].locked
+  }
+
   private changeOf(i: number, d: number) {
     if (!this.base || !this.wt.change) return 0
-    return this.base[i] >= 0 && this.base[i] !== d ? (this.wt.change * this.g.w[i]) / this.quota : 0
+    const b = this.base[i]
+    if (b < 0 || b === d) return 0
+    // opposition seats protected for "minor changes only" are much costlier to change
+    const mul = this.specs[b].opp || this.specs[d].opp ? OPP_CHANGE : 1
+    return (mul * this.wt.change * this.g.w[i]) / this.quota
   }
 
   /** Put block i into district d (i must currently be unassigned). */
@@ -285,7 +296,7 @@ export function grow(p: Partition, g: Graph, rng: Rng, seedPa?: Int32Array) {
     let d = -1
     let fill = Infinity
     for (let k = 0; k < D; k++) {
-      if (!frontier[k].size) continue
+      if (!frontier[k].size || p.isLocked(k)) continue
       const f = p.E[k] / p.target[k] + rng.next() * 1e-6
       if (f < fill) { fill = f; d = k }
     }
@@ -316,12 +327,12 @@ export function anneal(p: Partition, g: Graph, rng: Rng, iterations: number, t0 
     const i = main[Math.floor(rng.next() * main.length)]
     const a = p.assign[i]
     const nbs = g.adj[i]
-    if (!nbs.length || p.count[a] <= 1) continue
+    if (!nbs.length || p.count[a] <= 1 || p.isLocked(a)) continue
     let b = -1
     const start = Math.floor(rng.next() * nbs.length)
     for (let k = 0; k < nbs.length; k++) {
       const n = nbs[(start + k) % nbs.length]
-      if (g.main[n] && p.assign[n] !== a) { b = p.assign[n]; break }
+      if (g.main[n] && p.assign[n] !== a && !p.isLocked(p.assign[n])) { b = p.assign[n]; break }
     }
     if (b < 0) continue
     const delta = p.moveDelta(i, b)
@@ -348,7 +359,7 @@ export function runOnce(input: EngineInput): Partition {
   for (let pass = 0; pass < 5; pass++)
     for (const i of g.mainList) {
       if (p.assign[i] >= 0) continue
-      const n = g.adj[i].find((j) => p.assign[j] >= 0)
+      const n = g.adj[i].find((j) => p.assign[j] >= 0 && !p.isLocked(p.assign[j])) ?? g.adj[i].find((j) => p.assign[j] >= 0)
       if (n !== undefined) p.add(i, p.assign[n])
     }
   anneal(p, g, rng, input.iterations)

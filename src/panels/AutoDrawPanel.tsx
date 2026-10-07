@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useStore } from '../state/store'
 import { Button, Section, Stat, fmt, pct } from '../components/ui'
 import { ArrowLeft, ArrowRight, CheckCircle2, Dices, Landmark, Puzzle, Ruler, Scale, Undo2, Wand2, type LucideIcon } from 'lucide-react'
-import { DEFAULT_OPTIONS, type GerryGoal, type Method, type RedistrictOptions, type RedistrictReport, type RedistrictResult } from '../model/redistrict'
+import { DEFAULT_OPTIONS, ebrcStartPlan, oppositionHeld, type GerryGoal, type Method, type OppMode, type RedistrictOptions, type RedistrictReport, type RedistrictResult } from '../model/redistrict'
+import { ebrcChosenStructure } from '../model/redistrict/structure'
 
 const METHODS: { id: Method; icon: LucideIcon; title: string; blurb: string }[] = [
   { id: 'ebrc', icon: Landmark, title: 'EBRC-style', blurb: 'Update the existing map the way the real committee would: small changes to fix seats that have too many or too few voters.' },
@@ -15,6 +16,12 @@ const GOALS: { id: GerryGoal; label: string; hint: string }[] = [
   { id: 'pap', label: 'Favour the PAP', hint: 'Spread opposition voters thinly so they win as few seats as possible.' },
   { id: 'opposition', label: 'Favour the opposition', hint: 'Group opposition-leaning areas together so they win more seats.' },
   { id: 'competitive', label: 'Most competitive', hint: 'Create as many close, 50-50 seats as possible.' },
+]
+
+const OPP_MODES: { id: OppMode; label: string; hint: string }[] = [
+  { id: 'lock', label: 'Leave them untouched', hint: 'Their boundaries stay exactly the same, whatever else changes.' },
+  { id: 'minor', label: 'Minor changes only if needed', hint: 'Small adjustments only when needed to keep voter numbers within the limit.' },
+  { id: 'free', label: 'Redraw like any other seat', hint: 'No special treatment.' },
 ]
 
 const METHOD_DEFAULT_DEV: Record<Method, number> = { ebrc: 0.15, compact: 0.1, custom: 0.1, gerrymander: 0.15 }
@@ -57,16 +64,27 @@ export function AutoDrawPanel({ onClose }: Props) {
   const job = useRef(0)
   useEffect(() => () => worker.current?.terminate(), [])
 
+  // opposition-held seats on the map EBRC mode starts from
+  const oppSeats = useMemo(() => {
+    if (opts.method !== 'ebrc') return null
+    const start = ebrcStartPlan(data.blocks, data.ge, plan, opts)
+    const ids = oppositionHeld(start, data.blocks, data.ge, start !== plan)
+    const ones = Object.fromEntries(start.constituencies.map((c) => [c.id, 1]))
+    const note = opts.ebrcMix === 'choose' ? ebrcChosenStructure(start, ones, opts.smcCount, opts.grcCounts, ids, opts.oppMode).note : undefined
+    return { names: start.constituencies.filter((c) => ids.has(c.id)).map((c) => c.name), note }
+  }, [data, plan, opts])
+  const chosenMix = opts.method === 'custom' || (opts.method === 'ebrc' && opts.ebrcMix === 'choose')
+
   const customSeats = opts.smcCount + ([3, 4, 5, 6] as const).reduce((s, k) => s + k * (opts.grcCounts[k] || 0), 0)
-  const seats = opts.method === 'custom' ? customSeats : opts.totalSeats
-  const districts = opts.method === 'custom' ? opts.smcCount + Object.values(opts.grcCounts).reduce((a, b) => a + b, 0) : null
+  const seats = chosenMix ? customSeats : opts.totalSeats
+  const districts = chosenMix ? opts.smcCount + Object.values(opts.grcCounts).reduce((a, b) => a + b, 0) : null
   const problem = useMemo(() => {
     if (seats < 20 || seats > 150) return 'Choose between 20 and 150 seats.'
     if (opts.method !== 'ebrc' && opts.smcCount > seats) return 'More SMCs than seats.'
-    if (opts.method === 'custom' && districts === 0) return 'Add at least one constituency.'
+    if (chosenMix && districts === 0) return 'Add at least one constituency.'
     if (opts.smcCount < 8) return 'The Constitution requires at least 8 SMCs.'
     return null
-  }, [seats, opts, districts])
+  }, [seats, opts, districts, chosenMix])
 
   const draw = (o: RedistrictOptions = opts) => {
     worker.current ??= new Worker(new URL('../model/redistrict/redistrict.worker.ts', import.meta.url), { type: 'module' })
@@ -99,7 +117,7 @@ export function AutoDrawPanel({ onClose }: Props) {
         <p className="text-xs leading-relaxed text-slate-400">Pick a method and the simulator redraws every boundary for you in a few seconds. It uses the {year === 2030 ? '2030 projected' : '2025'} voter numbers (switch at the top). You can undo, or fine-tune the result by hand afterwards.</p>
       </Section>
 
-      {result && !running && <ResultCard r={result.report} method={result.method} onUndo={() => { undo(); setResult(null) }} onAgain={another} onContests={() => setTab('contests')} />}
+      {result && !running && <ResultCard r={result.report} method={result.method} oppMode={result.opts.oppMode} onUndo={() => { undo(); setResult(null) }} onAgain={another} onContests={() => setTab('contests')} />}
 
       <Section title="1 · Choose a method">
         <div className="grid grid-cols-2 gap-1.5">
@@ -119,13 +137,36 @@ export function AutoDrawPanel({ onClose }: Props) {
             <Field label="Start from">
               <Segmented value={opts.startFrom} onChange={(v) => set({ startFrom: v })} options={[{ v: 'ge2025', l: 'GE2025 map' }, { v: 'current', l: 'My current map' }]} />
             </Field>
-            <Field label="Total seats" hint={`Suggested for the ${year} voters: ${suggestedSeats} (keeps about ${fmt(quota2025)} voters per MP, as in 2025)`}>
-              <NumberInput value={opts.totalSeats} min={60} max={130} onChange={(v) => set({ totalSeats: v })} />
-              {opts.totalSeats !== suggestedSeats && <button className="ml-2 text-[11px] text-sky-400" onClick={() => set({ totalSeats: suggestedSeats })}>use {suggestedSeats}</button>}
+            <Field label="Opposition-held seats" hint={oppSeats?.names.length ? `On this map: ${oppSeats.names.join(', ')}` : 'None on this map.'}>{null}</Field>
+            <div className="space-y-1 pb-1">
+              {OPP_MODES.map((m) => (
+                <label key={m.id} className={`flex cursor-pointer items-start gap-2 rounded-md border p-1.5 text-xs ${opts.oppMode === m.id ? 'border-rose-500/70 bg-rose-600/10' : 'border-slate-800 hover:bg-slate-900'}`}>
+                  <input type="radio" className="mt-0.5" checked={opts.oppMode === m.id} onChange={() => set({ oppMode: m.id })} />
+                  <span><b>{m.label}</b><br /><span className="text-slate-400">{m.hint}</span></span>
+                </label>
+              ))}
+            </div>
+            <Field label="Seat structure">
+              <Segmented value={opts.ebrcMix} onChange={(v) => set(v === 'choose' ? { ebrcMix: v, smcCount: GE2025_MIX.smc, grcCounts: GE2025_MIX.grc } : { ebrcMix: v, smcCount: Math.max(15, currentSmc) })}
+                options={[{ v: 'auto', l: 'Auto' }, { v: 'choose', l: 'Choose GRCs' }]} />
             </Field>
-            <Field label="At least this many SMCs" hint="New SMCs are carved out of the most crowded GRCs.">
-              <NumberInput value={opts.smcCount} min={8} max={40} onChange={(v) => set({ smcCount: v })} />
-            </Field>
+            {opts.ebrcMix === 'auto' ? (
+              <>
+                <Field label="Total seats" hint={`Suggested for the ${year} voters: ${suggestedSeats} (keeps about ${fmt(quota2025)} voters per MP, as in 2025)`}>
+                  <NumberInput value={opts.totalSeats} min={60} max={130} onChange={(v) => set({ totalSeats: v })} />
+                  {opts.totalSeats !== suggestedSeats && <button className="ml-2 text-[11px] text-sky-400" onClick={() => set({ totalSeats: suggestedSeats })}>use {suggestedSeats}</button>}
+                </Field>
+                <Field label="At least this many SMCs" hint="New SMCs are carved out of the most crowded GRCs.">
+                  <NumberInput value={opts.smcCount} min={8} max={40} onChange={(v) => set({ smcCount: v })} />
+                </Field>
+              </>
+            ) : (
+              <>
+                <p className="text-[10px] leading-snug text-slate-500">Existing seats are reused where possible; the rest are merged away or new ones added.{opts.oppMode !== 'free' && ' Protected opposition seats count towards these numbers when their size matches.'}</p>
+                <MixInputs opts={opts} set={set} total={customSeats} districts={districts!} />
+                {oppSeats?.note && <p className="mt-1 rounded-md border border-amber-700/60 bg-amber-950/40 p-1.5 text-[11px] leading-snug text-amber-100">{oppSeats.note}</p>}
+              </>
+            )}
             <label className="mt-1 flex items-center gap-2 text-xs text-slate-300">
               <input type="checkbox" checked={opts.keepNames} onChange={(e) => set({ keepNames: e.target.checked })} /> Keep existing constituency names
             </label>
@@ -166,13 +207,7 @@ export function AutoDrawPanel({ onClose }: Props) {
               <Button onClick={() => set({ smcCount: GE2025_MIX.smc, grcCounts: GE2025_MIX.grc })}>GE2025 mix</Button>
               <Button onClick={() => set({ smcCount: 32, grcCounts: { 3: 0, 4: 0, 5: 0, 6: 0 }, maxDeviation: 0.15 })}>Small Parliament (32)</Button>
             </div>
-            <Field label="SMCs (1 MP each)"><NumberInput value={opts.smcCount} min={8} max={150} onChange={(v) => set({ smcCount: v })} /></Field>
-            {([3, 4, 5, 6] as const).map((k) => (
-              <Field key={k} label={`GRCs of ${k} MPs`}>
-                <NumberInput value={opts.grcCounts[k]} min={0} max={40} onChange={(v) => set({ grcCounts: { ...opts.grcCounts, [k]: v } })} />
-              </Field>
-            ))}
-            <div className="mt-1 text-xs text-slate-300">Total: <b className="tabular">{customSeats}</b> seats in <b className="tabular">{districts}</b> constituencies</div>
+            <MixInputs opts={opts} set={set} total={customSeats} districts={districts!} />
           </>
         )}
 
@@ -211,11 +246,13 @@ export function AutoDrawPanel({ onClose }: Props) {
   )
 }
 
-function ResultCard({ r, method, onUndo, onAgain, onContests }: { r: RedistrictReport; method: Method; onUndo: () => void; onAgain: () => void; onContests: () => void }) {
+function ResultCard({ r, method, oppMode, onUndo, onAgain, onContests }: { r: RedistrictReport; method: Method; oppMode: OppMode; onUndo: () => void; onAgain: () => void; onContests: () => void }) {
   const m = METHODS.find((x) => x.id === method)!
   return (
     <Section title={<span className="flex items-center gap-1.5 text-emerald-300"><CheckCircle2 size={14} aria-hidden /> New map drawn</span>} right={<span className="text-[11px] text-slate-500">{(r.ms / 1000).toFixed(1)}s</span>} className="bg-emerald-950/20">
       <p className="text-xs text-slate-300"><m.icon size={13} className="mr-1 inline align-[-2px]" aria-hidden />{m.title}: <b>{r.seats} seats</b> in {r.smc + r.grc} constituencies ({r.smc} SMCs, {r.grc} GRCs).</p>
+      {method === 'ebrc' && oppMode !== 'free' && r.protected.length > 0 && <p className="mt-1 text-[11px] text-slate-400">Opposition seats {oppMode === 'lock' ? 'left untouched' : 'changed only if needed'}: {r.protected.join(', ')}</p>}
+      {r.mixNote && <p className="mt-1 text-[11px] text-amber-200">{r.mixNote}</p>}
       <div className="mt-2 grid grid-cols-2 gap-1.5">
         <Stat label="Largest imbalance" value={`±${(r.maxDeviation * 100).toFixed(1)}%`} sub={`average ±${(r.meanDeviation * 100).toFixed(1)}%`} />
         <Stat label="Voters kept in same seat" value={pct(r.keptShare, 0)} sub="same name as in GE2025" />
@@ -228,6 +265,20 @@ function ResultCard({ r, method, onUndo, onAgain, onContests }: { r: RedistrictR
         <Button variant="primary" onClick={onContests}>Next: Contests <ArrowRight size={14} aria-hidden /></Button>
       </div>
     </Section>
+  )
+}
+
+function MixInputs({ opts, set, total, districts }: { opts: RedistrictOptions; set: (p: Partial<RedistrictOptions>) => void; total: number; districts: number }) {
+  return (
+    <>
+      <Field label="SMCs (1 MP each)"><NumberInput value={opts.smcCount} min={8} max={150} onChange={(v) => set({ smcCount: v })} /></Field>
+      {([3, 4, 5, 6] as const).map((k) => (
+        <Field key={k} label={`GRCs of ${k} MPs`}>
+          <NumberInput value={opts.grcCounts[k]} min={0} max={40} onChange={(v) => set({ grcCounts: { ...opts.grcCounts, [k]: v } })} />
+        </Field>
+      ))}
+      <div className="mt-1 text-xs text-slate-300">Total: <b className="tabular">{total}</b> seats in <b className="tabular">{districts}</b> constituencies</div>
+    </>
   )
 }
 

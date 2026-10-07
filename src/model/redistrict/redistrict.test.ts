@@ -82,6 +82,54 @@ describe('auto-draw', () => {
     expect(r.report.maxDeviation).toBeLessThanOrEqual(0.15 + 1e-9)
   }, 30000)
 
+  const OPP = ['Aljunied', 'Sengkang', 'Hougang']
+  const oppIds = ge.constituencies.filter((c) => c.result[0].party !== 'PAP').map((c) => c.id)
+  /** share of the GE2025 opposition seats' electors still in a seat continuing the same one */
+  const oppKept = (r: RedistrictResult) => {
+    let kept = 0, tot = 0
+    for (const b of blocks) if (oppIds.includes(b.ed)) { tot += b.e25; if (r.plan.assign[b.id] === b.ed) kept += b.e25 }
+    return kept / tot
+  }
+
+  it('EBRC-style can leave opposition-held seats untouched', () => {
+    expect(ge.constituencies.filter((c) => oppIds.includes(c.id)).map((c) => c.name.replace(/ (GRC|SMC)$/i, '')).sort()).toEqual([...OPP].sort())
+    const r = run({ method: 'ebrc', oppMode: 'lock', totalSeats: 97, smcCount: 15, maxDeviation: 0.15, seed: 1 })
+    console.log('ebrc-lock', r.report)
+    checkValid(r, { seats: 97, maxDev: 0.15 })
+    for (const b of blocks) {
+      const inOpp = oppIds.includes(b.ed)
+      const nowOpp = oppIds.includes(r.plan.assign[b.id] ?? '')
+      if (inOpp || nowOpp) expect(r.plan.assign[b.id], `block ${b.id}`).toBe(b.ed)
+    }
+    expect(r.report.protected).toHaveLength(3)
+  }, 30000)
+
+  it('EBRC-style minor mode barely changes opposition-held seats', () => {
+    const r = run({ method: 'ebrc', oppMode: 'minor', totalSeats: 97, smcCount: 15, maxDeviation: 0.15, seed: 1 })
+    console.log('ebrc-minor', r.report, oppKept(r))
+    checkValid(r, { seats: 97, maxDev: 0.15 })
+    expect(oppKept(r)).toBeGreaterThan(0.95)
+  }, 30000)
+
+  it('EBRC-style with a chosen GRC mix', () => {
+    const r = run({ method: 'ebrc', ebrcMix: 'choose', oppMode: 'free', smcCount: 12, grcCounts: { 3: 0, 4: 10, 5: 9, 6: 0 }, maxDeviation: 0.15, seed: 1 })
+    console.log('ebrc-choose', r.report)
+    checkValid(r, { seats: 97, smc: 12, maxDev: 0.15 })
+    const sizes = r.plan.constituencies.filter((c) => c.type === 'GRC').map((c) => c.seats)
+    expect(sizes.filter((k) => k === 4)).toHaveLength(10)
+    expect(sizes.filter((k) => k === 5)).toHaveLength(9)
+  }, 30000)
+
+  it('EBRC-style chosen mix keeps locked opposition seats on top of the mix', () => {
+    // 4 GRCs of 6 and 73 SMCs: Aljunied & Sengkang (5 MPs each) do not fit, so they are kept extra
+    const r = run({ method: 'ebrc', ebrcMix: 'choose', oppMode: 'lock', smcCount: 63, grcCounts: { 3: 0, 4: 0, 5: 0, 6: 4 }, maxDeviation: 0.2, seed: 1 })
+    console.log('ebrc-choose-lock', r.report)
+    expect(r.report.mixNote).toMatch(/Aljunied/i)
+    expect(r.plan.constituencies.filter((c) => c.type === 'GRC')).toHaveLength(6)
+    expect(r.plan.constituencies.filter((c) => c.type === 'SMC')).toHaveLength(63)
+    for (const b of blocks) if (oppIds.includes(b.ed)) expect(r.plan.assign[b.id]).toBe(b.ed)
+  }, 60000)
+
   it('gerrymanders move seats in the chosen direction', () => {
     const pap = run({ method: 'gerrymander', goal: 'pap', maxDeviation: 0.15, seed: 5 })
     const opp = run({ method: 'gerrymander', goal: 'opposition', maxDeviation: 0.15, seed: 5 })

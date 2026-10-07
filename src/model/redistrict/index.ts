@@ -1,8 +1,8 @@
 import type { Block, Constituency, GE2025Data, Plan } from '../../types'
 import { buildGraph, type Graph } from './graph'
-import { ebrcStructure, structureFor } from './structure'
+import { ebrcChosenStructure, ebrcStructure, structureFor } from './structure'
 import { runOnce, type Partition, type Weights } from './partition'
-import type { DistrictSpec, Progress, RedistrictOptions, RedistrictResult } from './types'
+import type { DistrictSpec, Progress, RedistrictOptions, RedistrictReport, RedistrictResult } from './types'
 import { rng } from '../rng'
 import { distinctColors, electorsOf, ge2025Plan, titleCase } from '../stats'
 import { uniqueNames } from '../naming'
@@ -32,6 +32,8 @@ export const DEFAULT_OPTIONS: RedistrictOptions = {
   grcCounts: { 3: 0, 4: 8, 5: 10, 6: 0 },
   startFrom: 'ge2025',
   keepNames: true,
+  oppMode: 'minor',
+  ebrcMix: 'auto',
   goal: 'pap',
 }
 
@@ -51,18 +53,25 @@ export function redistrict(
   let init: Int32Array | null = null
   let base: Int32Array | null = null
   let startPlan: Plan | null = null
+  let mixNote: string | undefined
 
   if (opts.method === 'ebrc') {
-    const useCurrent = opts.startFrom === 'current' && current.constituencies.length > 0 && current.assign.some(Boolean)
-    startPlan = useCurrent ? current : ge2025Plan(blocks, ge, CONSTITUENCY_PALETTE)
+    startPlan = ebrcStartPlan(blocks, ge, current, opts)
     const electors: Record<string, number> = {}
     startPlan.assign.forEach((cid, i) => { if (cid) electors[cid] = (electors[cid] || 0) + g.w[i] })
-    specs = ebrcStructure(startPlan, electors, opts.totalSeats)
-    const index = new Map(specs.map((s, i) => [s.baseId, i]))
+    const opp = oppositionHeld(startPlan, blocks, ge, startPlan !== current)
+    if (opts.ebrcMix === 'choose') {
+      const r = ebrcChosenStructure(startPlan, electors, opts.smcCount, opts.grcCounts, opp, opts.oppMode)
+      specs = r.specs
+      mixNote = r.note
+    } else specs = ebrcStructure(startPlan, electors, opts.totalSeats, opp, opts.oppMode)
+    const index = new Map<string, number>()
+    specs.forEach((s, i) => { if (s.baseId) index.set(s.baseId, i) })
     init = new Int32Array(g.n).fill(-1)
     startPlan.assign.forEach((cid, i) => { if (cid && index.has(cid)) init![i] = index.get(cid)! })
     base = init.slice()
-    carveSmcs(g, specs, init, opts.smcCount)
+    if (opts.ebrcMix === 'choose') seedNewDistricts(g, specs, init)
+    else carveSmcs(g, specs, init, opts.smcCount)
   } else {
     specs = structureFor(opts)
   }
@@ -88,7 +97,34 @@ export function redistrict(
   const p = best!
   attachIslands(g, p, startPlan, specs)
   const plan = buildPlan(blocks, ge, g, p, specs, opts, startPlan)
-  return { plan, report: makeReport(blocks, ge, g, p, specs, plan, Date.now() - t0) }
+  const report = makeReport(blocks, ge, g, p, specs, plan, Date.now() - t0)
+  const kept = new Set(specs.filter((s) => s.locked || s.opp).map((s) => s.baseId))
+  report.protected = plan.constituencies.filter((c) => kept.has(c.id)).map((c) => c.name)
+  if (mixNote) report.mixNote = mixNote
+  return { plan, report }
+}
+
+/** The map EBRC mode starts from: the user's current map, or the GE2025 boundaries. */
+export function ebrcStartPlan(blocks: Block[], ge: GE2025Data, current: Plan, opts: Pick<RedistrictOptions, 'startFrom'>): Plan {
+  const useCurrent = opts.startFrom === 'current' && current.constituencies.length > 0 && current.assign.some(Boolean)
+  return useCurrent ? current : ge2025Plan(blocks, ge, CONSTITUENCY_PALETTE)
+}
+
+/**
+ * Constituencies held by the opposition: the actual GE2025 winners on the GE2025 map, otherwise
+ * seats where the opposition won most votes in 2025 (notionally, from the neighbourhood results).
+ */
+export function oppositionHeld(plan: Plan, blocks: Block[], ge: GE2025Data, isGe2025: boolean): Set<string> {
+  if (isGe2025) return new Set(ge.constituencies.filter((c) => c.result[0] && c.result[0].party !== 'PAP').map((c) => c.id))
+  const e: Record<string, number> = {}
+  const pap: Record<string, number> = {}
+  for (const b of blocks) {
+    const cid = plan.assign[b.id]
+    if (!cid) continue
+    e[cid] = (e[cid] || 0) + b.e25
+    pap[cid] = (pap[cid] || 0) + b.e25 * b.pap
+  }
+  return new Set(plan.constituencies.filter((c) => e[c.id] > 0 && pap[c.id] / e[c.id] < 0.5).map((c) => c.id))
 }
 
 /** EBRC mode: create new SMCs (seeded at the edge of the biggest GRCs) until the minimum is met. */
@@ -98,7 +134,7 @@ function carveSmcs(g: Graph, specs: DistrictSpec[], init: Int32Array, minSmc: nu
     const members = (d: number) => g.mainList.filter((i) => init[i] === d)
     const candidates = specs
       .map((s, d) => ({ s, d, e: members(d).reduce((a, i) => a + g.w[i], 0) }))
-      .filter(({ s }) => s.type === 'GRC' && s.seats >= 4)
+      .filter(({ s }) => s.type === 'GRC' && s.seats >= 4 && !s.locked && !s.opp)
       .sort((a, b) => b.e / b.s.seats - a.e / a.s.seats || b.s.seats - a.s.seats)
     const pick = candidates[0]
     if (!pick) return
@@ -118,6 +154,59 @@ function carveSmcs(g: Graph, specs: DistrictSpec[], init: Int32Array, minSmc: nu
   }
 }
 
+/**
+ * EBRC mode with a chosen mix: every new district (no existing seat to continue) gets a seed block.
+ * Land left over from dissolved seats is used first; otherwise the seed sits on the edge of the
+ * most crowded unprotected district. Growth and annealing then settle the boundaries.
+ */
+function seedNewDistricts(g: Graph, specs: DistrictSpec[], init: Int32Array) {
+  const quota = g.total / specs.reduce((a, s) => a + s.seats, 0)
+  for (let d = 0; d < specs.length; d++) {
+    if (specs[d].baseId) continue
+    // centres of districts that already have land
+    const SX = new Float64Array(specs.length)
+    const SY = new Float64Array(specs.length)
+    const SW = new Float64Array(specs.length)
+    const E = new Float64Array(specs.length)
+    const free: number[] = []
+    for (const i of g.mainList) {
+      const k = init[i]
+      if (k < 0) { if (g.w[i] > 0) free.push(i); continue }
+      E[k] += g.w[i]
+      if (g.w[i] <= 0) continue
+      SX[k] += g.w[i] * g.x[i]; SY[k] += g.w[i] * g.y[i]; SW[k] += g.w[i]
+    }
+    let seed = -1
+    if (free.length) {
+      // the free block farthest from every existing centre, so new seats spread over the free land
+      let far = -1
+      for (const i of free) {
+        let near = Infinity
+        for (let k = 0; k < specs.length; k++) if (SW[k]) near = Math.min(near, (g.x[i] - SX[k] / SW[k]) ** 2 + (g.y[i] - SY[k] / SW[k]) ** 2)
+        if (near > far) { far = near; seed = i }
+      }
+    } else {
+      let worst = -Infinity
+      let donor = -1
+      for (let k = 0; k < specs.length; k++) {
+        if (k === d || !SW[k] || specs[k].locked || specs[k].opp) continue
+        const r = E[k] / (specs[k].seats * quota)
+        if (r > worst) { worst = r; donor = k }
+      }
+      if (donor < 0) continue
+      const cx = SX[donor] / SW[donor]
+      const cy = SY[donor] / SW[donor]
+      let far = -1
+      for (const i of g.mainList) {
+        if (init[i] !== donor || g.w[i] <= 0) continue
+        const dd = (g.x[i] - cx) ** 2 + (g.y[i] - cy) ** 2
+        if (dd > far) { far = dd; seed = i }
+      }
+    }
+    if (seed >= 0) init[seed] = d
+  }
+}
+
 /** Islands and other detached land join their old constituency, or the nearest one. */
 function attachIslands(g: Graph, p: Partition, startPlan: Plan | null, specs: DistrictSpec[]) {
   const byBase = new Map(specs.map((s, i) => [s.baseId, i]))
@@ -132,7 +221,7 @@ function attachIslands(g: Graph, p: Partition, startPlan: Plan | null, specs: Di
       const cy = comp.reduce((a, i) => a + g.y[i], 0) / comp.length
       let best = Infinity
       for (let k = 0; k < p.D; k++) {
-        if (!p.SW[k]) continue
+        if (!p.SW[k] || specs[k].locked) continue
         const dd = (p.SX[k] / p.SW[k] - cx) ** 2 + (p.SY[k] / p.SW[k] - cy) ** 2
         if (dd < best) { best = dd; d = k }
       }
@@ -177,7 +266,7 @@ function buildPlan(blocks: Block[], ge: GE2025Data, g: Graph, p: Partition, spec
   return { constituencies: constituencies.sort((a, b) => a.name.localeCompare(b.name)), assign }
 }
 
-function makeReport(blocks: Block[], ge: GE2025Data, g: Graph, p: Partition, specs: DistrictSpec[], plan: Plan, ms: number) {
+function makeReport(blocks: Block[], ge: GE2025Data, g: Graph, p: Partition, specs: DistrictSpec[], plan: Plan, ms: number): RedistrictReport {
   const seats = specs.reduce((s, d) => s + d.seats, 0)
   const quota = g.total / seats
   let maxDev = 0
@@ -212,6 +301,7 @@ function makeReport(blocks: Block[], ge: GE2025Data, g: Graph, p: Partition, spe
     papSeats,
     oppSeats: seats - papSeats,
     competitiveSeats,
+    protected: [],
     ms,
   }
 }
