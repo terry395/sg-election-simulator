@@ -70,17 +70,21 @@ export function defaultContests(plan: Plan, stats: PlanStats, ge: GE2025Data): R
     const main = s.mainOpp || MPBH_HYPOTHETICAL_OPP
     out[c.id] = { parties: [PAP, main], star: {} }
   }
+  const used: UsedLeaders = new Map()
+  for (const id of leaderOrder(plan, stats, unchanged)) out[id].leaders = defaultLeaders(out[id].parties, stats.byId[id].sources, ge, used)
+  return out
+}
+
+/** Order in which seats get their default leaders: unchanged seats first, then the seats most rooted in one 2025 constituency. */
+export function leaderOrder(plan: Plan, stats: PlanStats, unchanged: Set<string> = new Set()): string[] {
   const topShare = (id: string) => {
     const s = stats.byId[id]
     return s?.electors ? Math.max(0, ...Object.values(s.sources)) / s.electors : 0
   }
-  const order = plan.constituencies
+  return plan.constituencies
     .filter((c) => stats.byId[c.id]?.electors)
     .map((c) => c.id)
     .sort((a, b) => Number(unchanged.has(b)) - Number(unchanged.has(a)) || topShare(b) - topShare(a))
-  const used: UsedLeaders = new Map()
-  for (const id of order) out[id].leaders = defaultLeaders(out[id].parties, stats.byId[id].sources, ge, used)
-  return out
 }
 
 /** Keep existing choices for constituencies that still exist; fill defaults for new ones. */

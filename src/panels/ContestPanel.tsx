@@ -1,12 +1,14 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState } from 'react'
 import { useStore } from '../state/store'
 import { useDerived } from '../state/derived'
 import { Button, PartyBadge, Section, Slider, pct } from '../components/ui'
+import { LeaderPicker } from '../components/LeaderPicker'
+import { AutoContestsModal } from '../components/AutoContestsModal'
 import { PAP } from '../data/parties'
 import type { Contest } from '../types'
-import { candidatesByParty, leaderBonus, leaderRole, type Candidate } from '../data/candidates'
+import { candidatesByParty, leaderBonus, leaderRole } from '../data/candidates'
 import { defaultLeaders, usedLeaders } from '../model/contests'
-import { X } from 'lucide-react'
+import { Wand2, X } from 'lucide-react'
 
 export function ContestPanel() {
   const plan = useStore((s) => s.plan)
@@ -22,6 +24,7 @@ export function ContestPanel() {
   const ge = useStore((s) => s.data)!.ge
   const candidates = useMemo(() => candidatesByParty(ge), [ge])
   const [filter, setFilter] = useState('')
+  const [autoOpen, setAutoOpen] = useState(false)
   /** `${cid}:${party}` pairs where the user chose to type a custom name */
   const [customKeys, setCustomKeys] = useState<Set<string>>(() => new Set())
 
@@ -58,6 +61,7 @@ export function ContestPanel() {
       <Section title="Line-ups">
         <p className="text-xs text-slate-400">{contested} of {plan.constituencies.length} constituencies contested by {oppCount} opposition parties. Defaults: PAP vs the party that fought for most of those voters in 2025.</p>
         <div className="mt-2 flex flex-wrap gap-1.5">
+          <Button variant="subtle" onClick={() => setAutoOpen(true)} title="Set where each party stands, who anchors where and which parties cooperate"><Wand2 size={13} aria-hidden /> Auto…</Button>
           <Button onClick={resetContests}>Reset to defaults</Button>
           <Button onClick={straightFights} title="Keep only the strongest opposition party in each seat">Straight fights only</Button>
         </div>
@@ -143,59 +147,7 @@ export function ContestPanel() {
         </ul>
       </Section>
       <PartyEditor />
-    </div>
-  )
-}
-
-const CUSTOM = '__custom'
-
-/** Native select of GE2025 candidates (easy on phones), with a free-text fallback for anyone else. */
-function LeaderPicker({ party, name, list, badge, custom, setCustom, onChange }: {
-  party: string; name: string; list: Candidate[]; badge: ReactNode; custom: boolean
-  setCustom: (v: boolean) => void; onChange: (name: string) => void
-}) {
-  const notable = list.filter((x) => x.role)
-  const byEd = new Map<string, Candidate[]>()
-  for (const x of list) if (!x.role) byEd.set(x.edName, [...(byEd.get(x.edName) ?? []), x])
-  const eds = [...byEd.keys()].sort((a, b) => a.localeCompare(b))
-  const clear = name ? <button className="text-[10px] text-slate-500 hover:text-slate-300" onClick={() => { setCustom(false); onChange('') }} title="Clear" aria-label="Clear"><X size={12} /></button> : null
-  return (
-    <div>
-      <div className="flex items-center gap-1.5">
-        {badge}
-        {list.length > 0 && (
-          <select value={custom ? CUSTOM : name} aria-label={`${party} anchor leader`}
-            onChange={(e) => {
-              const v = e.target.value
-              if (v === CUSTOM) { setCustom(true); return }
-              setCustom(false)
-              onChange(v)
-            }}
-            className="min-w-0 flex-1 rounded border border-slate-700 bg-slate-950 px-1.5 py-1 text-xs">
-            <option value="">— No anchor leader —</option>
-            {notable.length > 0 && (
-              <optgroup label="Well-known">
-                {notable.map((x) => <option key={`${x.name}-${x.edId}`} value={x.name}>{x.name} — {x.role}</option>)}
-              </optgroup>
-            )}
-            {eds.map((ed) => (
-              <optgroup key={ed} label={`GE2025 ${ed}`}>
-                {byEd.get(ed)!.map((x) => <option key={`${x.name}-${x.edId}`} value={x.name}>{x.name}</option>)}
-              </optgroup>
-            ))}
-            <option value={CUSTOM}>Custom name…</option>
-          </select>
-        )}
-        {list.length === 0 && (
-          <input value={name} onChange={(e) => onChange(e.target.value)} placeholder="Type your candidate’s name"
-            className="min-w-0 flex-1 rounded border border-slate-700 bg-slate-950 px-1.5 py-1 text-xs" aria-label={`${party} anchor leader`} />
-        )}
-        {clear}
-      </div>
-      {list.length > 0 && custom && (
-        <input value={name} onChange={(e) => onChange(e.target.value)} placeholder="Type your candidate’s name" autoFocus={!name}
-          className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-1.5 py-1 text-xs" aria-label={`${party} custom anchor leader`} />
-      )}
+      {autoOpen && <AutoContestsModal onClose={() => setAutoOpen(false)} />}
     </div>
   )
 }
