@@ -11,19 +11,10 @@ import { BlockTooltip } from './BlockTooltip'
 import { Map as MapIcon, Satellite } from 'lucide-react'
 import { useIsMobile } from '../lib/useIsMobile'
 import { useSheet } from '../lib/sheet'
+import { COMPARE_TABS, FALLBACK_STYLE, MAX_BOUNDS, SATELLITE_ATTRIBUTION, SATELLITE_TILES, SG_BOUNDS, STYLE, fillOpacity } from './style'
+import { CompareMap } from './CompareMap'
 
 maplibregl.setWorkerUrl(workerUrl)
-
-const STYLE = 'https://tiles.openfreemap.org/styles/positron'
-const FALLBACK_STYLE: maplibregl.StyleSpecification = {
-  version: 8,
-  glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
-  sources: {},
-  layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#dfe7ef' } }],
-}
-const SATELLITE_TILES = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-const SATELLITE_ATTRIBUTION = 'Imagery © Esri, Maxar, Earthstar Geographics'
-const SG_BOUNDS:[number, number, number, number] = [103.55, 1.13, 104.15, 1.49]
 
 /** Paint-type tools that capture left-drag instead of panning the map. */
 const DRAG_TOOLS = new Set(['paint', 'erase', 'lasso'])
@@ -31,7 +22,8 @@ const DRAG_TOOLS = new Set(['paint', 'erase', 'lasso'])
 export function MapView() {
   const el = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
-  const [ready, setReady] = useState(false)
+  /** the map once its style has loaded (null until then) */
+  const [ready, setReady] = useState<maplibregl.Map | null>(null)
   /** the map element, kept in state so the info card can size itself to it */
   const [box, setBox] = useState<HTMLDivElement | null>(null)
   const [hover, setHover] = useState<{ id: number; x: number; y: number } | null>(null)
@@ -55,7 +47,7 @@ export function MapView() {
       container: el.current,
       style: STYLE,
       bounds: SG_BOUNDS,
-      maxBounds: [103.3, 1.0, 104.4, 1.65],
+      maxBounds: MAX_BOUNDS,
       attributionControl: { compact: true },
       dragRotate: false,
       pitchWithRotate: false,
@@ -111,7 +103,7 @@ export function MapView() {
         },
         paint: { 'text-color': '#0f172a', 'text-halo-color': '#ffffff', 'text-halo-width': 1.6 },
       })
-      setReady(true)
+      setReady(map)
     })
     return () => map.remove()
   }, [data])
@@ -143,7 +135,8 @@ export function MapView() {
     const sat = basemap === 'satellite'
     map.setLayoutProperty('satellite', 'visibility', sat ? 'visible' : 'none')
     // let the imagery show through the colours
-    map.setPaintProperty('blocks-fill', 'fill-opacity', ['case', ['boolean', ['feature-state', 'hover'], false], sat ? 0.8 : 0.95, sat ? 0.5 : 0.78])
+    const [lo, hi] = fillOpacity(sat)
+    map.setPaintProperty('blocks-fill', 'fill-opacity', ['case', ['boolean', ['feature-state', 'hover'], false], hi, lo])
   }, [basemap, ready])
 
   // phones: keep the map's focus in the part not covered by the bottom sheet
@@ -195,6 +188,8 @@ export function MapView() {
 
     const start = (e: MapMouseEvent | MapTouchEvent) => {
       if (tool !== 'lasso' && !st().activeId && tool !== 'erase') return
+      // your map is hidden under the past election on that side of the swipe divider
+      if (onPastSide(e.point.x)) return
       st().checkpoint()
       painting = true
       if (tool === 'lasso') lasso = [[e.lngLat.lng, e.lngLat.lat]]
@@ -211,12 +206,17 @@ export function MapView() {
       if (fromTouch() || !drawing || spaceDown.current || e.originalEvent.button !== 0) return
       start(e)
     }
+    /** the point is on the past-election side of the swipe comparison (which has its own info card) */
+    const onPastSide = (x: number) => {
+      const { compare, tab: t } = st()
+      return compare.on && COMPARE_TABS.has(t) && x < compare.split * canvas.clientWidth
+    }
     const onMove = (e: MapMouseEvent) => {
       if (fromTouch()) return
       const id = blockAt(e)
       setHoverState(id)
       // the info card would cover what you are drawing
-      setHover(id === null || painting ? null : { id, x: e.point.x, y: e.point.y })
+      setHover(id === null || painting || onPastSide(e.point.x) ? null : { id, x: e.point.x, y: e.point.y })
       extend(e, id)
     }
     const onUp = () => {
@@ -280,7 +280,7 @@ export function MapView() {
         const cid = s.plan.assign[id]
         if (cid) s.setActive(cid)
         // touch has no hover: a tap shows the area's info card
-        if (fromTouch()) setHover({ id, x: e.point.x, y: e.point.y })
+        if (fromTouch() && !onPastSide(e.point.x)) setHover({ id, x: e.point.x, y: e.point.y })
         return
       }
       if (tool === 'fill' && s.activeId) {
@@ -349,7 +349,8 @@ export function MapView() {
 
   return (
     <div className="relative h-full w-full">
-      <div ref={(n) => { el.current = n; setBox(n) }} className="h-full w-full" />
+      <div ref={(n) => { el.current = n; setBox(n) }} className="main-map h-full w-full" />
+      {ready && <CompareMap main={ready} />}
       {hover && <BlockTooltip id={hover.id} x={hover.x} y={hover.y} bounds={box} bottomInset={mobile ? sheetH : 0} onClose={() => setHover(null)} />}
       {/* sits under the zoom buttons */}
       <div className="absolute left-2.5 top-[82px] z-10 flex overflow-hidden rounded-md text-[11px] phone:top-[96px] font-medium shadow ring-1 ring-black/20" role="group" aria-label="Basemap">

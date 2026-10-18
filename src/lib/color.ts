@@ -19,6 +19,8 @@ export function ramp(stops: string[], t: number) {
   return mix(stops[i], stops[i + 1], x - i)
 }
 
+/** two-series chart colours, validated for colour-blind separation on the dark panel surface */
+export const SERIES = { grc: '#2f7de1', smc: '#c26f1f' }
 export const SEQ = ['#f7fbff', '#c6dbef', '#6baed6', '#2171b5', '#08306b']
 export const DIVERGING = ['#b2182b', '#ef8a62', '#f7f7f7', '#67a9cf', '#2166ac']
 

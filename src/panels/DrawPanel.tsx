@@ -10,6 +10,7 @@ import { suggestName } from '../model/stats'
 import { AutoDrawPanel } from './AutoDrawPanel'
 import { TOOLS } from './tools'
 import { PAP } from '../data/parties'
+import { CompareBoundaries, PastForSeat } from './ComparePanels'
 
 const LENSES: { id: Lens; label: string }[] = [
   { id: 'constituency', label: 'Constituencies' },
@@ -98,6 +99,7 @@ export function DrawPanel() {
         )}
       </Section>
 
+      <CompareBoundaries />
       <Issues />
       <ActiveConstituency />
       <ConstituencyList />
@@ -209,8 +211,9 @@ function ActiveConstituency() {
       <DemoBars label="Ethnicity" groups={DEMO_GROUPS.eth} values={s.eth} />
       <DemoBars label="Housing" groups={DEMO_GROUPS.house} values={s.house} />
       <div className="mt-2 text-[11px] text-slate-400">
-        Drawn from: {Object.entries(s.sources).filter(([, e]) => e > 0).sort((a, b) => b[1] - a[1]).map(([id, e]) => `${geName(id)} ${Math.round((e / s.electors) * 100)}%`).join(', ')}
+        Drawn from (GE2025): {Object.entries(s.sources).filter(([, e]) => e > 0).sort((a, b) => b[1] - a[1]).map(([id, e]) => `${geName(id)} ${Math.round((e / s.electors) * 100)}%`).join(', ')}
       </div>
+      <PastForSeat cid={c.id} />
     </Section>
   )
 }

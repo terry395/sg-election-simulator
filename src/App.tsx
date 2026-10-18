@@ -414,6 +414,7 @@ function About({ onClose }: { onClose: () => void }) {
         <h3 className="mt-3 font-semibold">Sources</h3>
         <ul className="list-disc pl-5 text-slate-300">
           <li>Elections Department: Electoral Boundary 2025, GE results by candidate, registered electors (data.gov.sg)</li>
+          <li>Elections Department: Electoral Boundary 2006, 2011, 2015 and 2020, for the comparisons with past elections (data.gov.sg)</li>
           <li>URA: Master Plan 2019 Subzone Boundary and Land Use layer (data.gov.sg)</li>
           <li>SingStat: Census of Population 2020, residents by subzone, age, ethnicity and dwelling type (data.gov.sg)</li>
           <li>Basemap © OpenFreeMap, © OpenStreetMap contributors; satellite imagery © Esri, Maxar, Earthstar Geographics</li>

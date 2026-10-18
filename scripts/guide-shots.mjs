@@ -156,11 +156,40 @@ await scrollPanelTo('Map lens')
 await shot('08-lens')
 await run(() => window.__store.getState().setLens('constituency'))
 
+// 25 compare with past boundaries: GE2015 on the left of the swipe divider, this map on the right
+await page.getByText('Compare with past boundaries').click()
+await run(() => window.__store.getState().setCompare({ year: 2015, split: 0.5 }))
+await page.waitForFunction(() => window.__compareMap?.getSource('past'))
+await run(() => new Promise((r) => { const m = window.__compareMap; if (m.loaded() && m.areTilesLoaded()) r(); else m.once('idle', () => r()) }))
+await idle()
+await scrollPanelTo('Compare with past')
+// hover a GE2015 constituency on the past side to show its result card
+p = await lngLatPoint([103.765, 1.35])
+await page.mouse.move(p.x - 20, p.y - 20)
+await page.mouse.move(p.x, p.y, { steps: 4 })
+await sleep(300)
+await shot('25-compare-boundaries')
+await run(() => window.__store.getState().setCompare({ on: false }))
+await parkMouse()
+
+// 27 the mock EBRC report for this map
+await run(() => window.__store.getState().setEbrcOpen(true))
+await sleep(800)
+await shot('27-ebrc-report')
+await run(() => window.__store.getState().setEbrcOpen(false))
+
 // 09 contests overview
 await run(() => { window.__store.getState().setActive(null); window.__store.getState().setTab('contests') })
 await idle()
 await scrollPanelTo(null)
 await shot('09-contests')
+
+// 29 auto line-ups
+await page.locator('aside button', { hasText: 'Auto…' }).first().click()
+await sleep(400)
+await shot('29-auto-lineups')
+await page.getByRole('dialog', { name: 'Auto line-ups' }).getByRole('button', { name: 'Close' }).click()
+await sleep(200)
 
 // 10 contest detail: East Coast, add PSP for a three-cornered fight, WP star candidate
 await run(() => {
@@ -260,6 +289,24 @@ await idle()
 await scrollPanelTo('Result')
 await shot('16-night-result')
 
+// 26 compare the night with GE2020: swipe on the map and the comparison panel
+await page.getByText('Compare with past elections').click()
+await run(() => window.__store.getState().setCompare({ year: 2020, split: 0.5 }))
+await page.waitForFunction(() => window.__compareMap?.getSource('past'))
+await run(() => new Promise((r) => { const m = window.__compareMap; if (m.loaded() && m.areTilesLoaded()) r(); else m.once('idle', () => r()) }))
+await idle()
+await scrollPanelTo('Compare with past')
+await parkMouse()
+await shot('26-compare-results')
+await run(() => window.__store.getState().setCompare({ on: false }))
+
+// 28 the mock newspaper write-up
+await run(() => window.__night.getState().setNewsOpen('en'))
+await sleep(1200)
+await shot('28-news-article')
+await run(() => window.__night.getState().setNewsOpen(null))
+await idle()
+
 // 17 map colouring at the end of the night, zoomed on the east
 await view([103.9, 1.36], 11.6)
 await idle()
@@ -311,5 +358,17 @@ await run(() => window.__store.getState().showPartyInfo('WP'))
 await sleep(400)
 await shot('21-parties')
 await run(() => window.__store.getState().showPartyInfo(null))
+
+// 30 the phone layout: full-screen map, drag-up panel and bottom tabs (a fresh page, GE2025 map)
+const phone = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true })
+await phone.goto(URL)
+await phone.evaluate(() => { localStorage.clear(); localStorage.setItem('sg-election-sim:guide-seen', '1') })
+await phone.reload()
+await phone.waitForFunction(() => window.__map && window.__store?.getState().data)
+await phone.evaluate(() => window.__store.getState().setTab('forecast'))
+await phone.evaluate(() => new Promise((r) => { const m = window.__map; if (m.loaded() && m.areTilesLoaded()) r(); else m.once('idle', () => r()) }))
+await phone.waitForTimeout(800)
+await phone.screenshot({ path: path.join(OUT, '30-phone.jpg'), type: 'jpeg', quality: 70 })
+console.log('saved', '30-phone')
 
 await browser.close()

@@ -83,6 +83,8 @@
   figure.shot { margin: 22px 0 28px; }
   .frame video { display: block; width: 100%; height: auto; }
   .video .frame { cursor: auto; }
+  .phone .frame { max-width: 300px; margin: 0 auto; }
+  .phone figcaption { max-width: 560px; margin-left: auto; margin-right: auto; }
   .frame { position: relative; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 8px 30px rgb(0 0 0 / .18); cursor: zoom-in; }
   .pin { position: absolute; transform: translate(-50%, -50%); width: clamp(18px, 2.3vw, 28px); height: clamp(18px, 2.3vw, 28px); border-radius: 50%;
     background: #facc15; color: #111827; border: 2px solid #111827; font: 800 clamp(10px, 1.2vw, 14px)/1 system-ui, sans-serif;
@@ -162,14 +164,18 @@
       <li class="sub"><a href="#step1-lasso">Using the lasso</a></li>
       <li class="sub"><a href="#step1-checks">Fixing problems</a></li>
       <li class="sub"><a href="#step1-lens">Map lenses</a></li>
+      <li class="sub"><a href="#step1-compare">Compare with past boundaries</a></li>
       <li class="sub"><a href="#step1-auto">Auto-draw</a></li>
       <li><a href="#step2">Step 2 · Contests</a></li>
+      <li class="sub"><a href="#auto-lineups">Auto line-ups</a></li>
       <li class="sub"><a href="#leaders">Anchor leaders</a></li>
       <li><a href="#step3">Step 3 · Swings & forecast</a></li>
       <li class="sub"><a href="#step3-swings">Types of swing</a></li>
       <li class="sub"><a href="#step3-sims">2,000 simulations</a></li>
       <li><a href="#step4">Step 4 · Election night</a></li>
       <li class="sub"><a href="#report">The election report</a></li>
+      <li class="sub"><a href="#news">Mock news article</a></li>
+      <li class="sub"><a href="#compare-results">Compare with past elections</a></li>
       <li class="sub"><a href="#coalitions">Hung parliaments</a></li>
       <li><a href="#share">Saving & sharing</a></li>
       <li><a href="#faq">Tips & FAQ</a></li>
@@ -180,7 +186,7 @@
     <!-- ============================================================ WELCOME -->
     <section id="welcome">
       <h1>How to use the GE2030 Simulator</h1>
-      <p class="lead">This simulator lets you play "election designer" for Singapore. You redraw the voting map, decide which parties stand where, choose how people's votes change, and then watch a pretend election night unfold, seat by seat.</p>
+      <p class="lead">This simulator lets you play "election designer" for Singapore. You redraw the voting map, decide which parties stand where, choose how people's votes change, and then watch a pretend election night unfold, seat by seat. Along the way you can compare your map and your results with every general election since 2006.</p>
       <p>You don't need to know anything about politics to use it. This guide explains every button and every election word in plain English, with pictures. It takes about 10 minutes to read, and you can jump to any part using the contents list.</p>
       <div class="callout warn"><b><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg> Disclaimer</b>This simulator does not represent any real-life polling, survey or official projection. No user data is recorded: nothing you do is sent to a server, and your work is saved only in your own browser. The one exception is optional: if you turn on AI pictures in the mock news article, short generic scene descriptions (never your map or any personal data) are sent to the free image service Pollinations.ai. It is intended purely for entertainment and educational purposes, and is not affiliated with the Elections Department or any political party.</div>
       <div class="callout"><b>Just want to play?</b> Open the simulator, click the <span class="ui">4 Election night</span> tab and press <span class="ui"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/></svg> Polls close — start the count</span>. You'll see the 2025 map play out as a live results night. Come back here when you want to understand what's going on.</div>
@@ -291,6 +297,7 @@
           <span class="pin" style="left:71.4%;top:12%">6</span>
           <span class="pin" style="left:71.4%;top:21.1%">7</span>
           <span class="pin" style="left:8.5%;top:20.3%">8</span>
+          <span class="pin" style="left:71.4%;top:58.4%">9</span>
         </div>
         <figcaption><span class="title">The main screen</span>
           <ol>
@@ -302,11 +309,15 @@
             <li><b>Side panel.</b> Shows the controls and numbers for the current step.</li>
             <li><b><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg> Auto-draw.</b> Let the computer redraw the whole map for you (see <a href="#step1-auto">Auto-draw</a>).</li>
             <li><b>Map / Satellite.</b> Switch the background to satellite photos to see the real rooftops, parks and water under the colours (see <a href="#satellite">Satellite view</a>). It works on every tab, and the simulator remembers your choice.</li>
+            <li><b><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg> Compare with past boundaries.</b> Put your map side by side with a past election's map, GE2006 to GE2025 (see <a href="#step1-compare">Compare with past boundaries</a>).</li>
           </ol>
         </figcaption>
       </figure>
       <div class="callout"><b>Pale areas on the map</b>Very light patches, like Jurong Island, the airport and the offshore islands, are places where nobody lives. They still belong to a constituency but have no voters.</div>
-      <div class="callout"><b>On a phone</b>The map fills the screen and the four steps sit along the bottom. The side panel becomes a sheet: drag its handle up for more controls, or down to see more map. Share, Export, Import and the electors switch are in the <span class="ui">☰</span> menu at the top right. On the Draw step, the tools float just above the sheet. Draw with one finger and move or zoom the map with two. Tap any area to see its details.</div>
+      <figure class="shot phone">
+        <div class="frame"><img src="/guide/30-phone.jpg" alt="The simulator on a phone: the map fills the screen, the forecast panel is a sheet at the bottom and the four steps are tabs along the bottom edge" loading="lazy" /></div>
+        <figcaption><span class="title">On a phone</span> The map fills the screen and the four steps sit along the bottom. The side panel becomes a sheet: drag its handle up for more controls, or down to see more map. Share, Export, Import and the electors switch are in the <span class="ui">☰</span> menu at the top right. On the Draw step, the tools float just above the sheet. Draw with one finger and move or zoom the map with two. Tap any area to see its details.</figcaption>
+      </figure>
     </section>
 
     <!-- ============================================================ STEP 1 -->
@@ -369,8 +380,8 @@
           <span class="pin" style="left:80.6%;top:31.7%">1</span>
           <span class="pin" style="left:37.8%;top:43.9%">2</span>
           <span class="pin" style="left:93.4%;top:28.7%">3</span>
-          <span class="pin" style="left:71.4%;top:58%">4</span>
-          <span class="pin" style="left:71.4%;top:70.7%">5</span>
+          <span class="pin" style="left:71.4%;top:67.5%">4</span>
+          <span class="pin" style="left:71.4%;top:90.5%">5</span>
         </div>
         <figcaption><span class="title">Painting a new SMC</span>
           <ol>
@@ -411,8 +422,8 @@
         <div class="frame"><img src="/guide/05-lasso.jpg" alt="Drawing a lasso loop around northern Punggol" loading="lazy" />
           <span class="pin" style="left:89.6%;top:31.7%">1</span>
           <span class="pin" style="left:48.6%;top:22.8%">2</span>
-          <span class="pin" style="left:71.4%;top:64.3%">3</span>
-          <span class="pin" style="left:71.4%;top:73.3%">4</span>
+          <span class="pin" style="left:71.4%;top:66.8%">3</span>
+          <span class="pin" style="left:71.4%;top:91%">4</span>
         </div>
         <figcaption><span class="title">Drawing a lasso</span>
           <ol>
@@ -426,7 +437,7 @@
       <figure class="shot">
         <div class="frame"><img src="/guide/06-lasso-done.jpg" alt="The lasso result: a new red Punggol North GRC that is too small for 4 MPs" loading="lazy" />
           <span class="pin" style="left:43%;top:33.3%">1</span>
-          <span class="pin" style="left:90.4%;top:23.1%">2</span>
+          <span class="pin" style="left:82.5%;top:23.1%">2</span>
           <span class="pin" style="left:90.3%;top:26.4%">3</span>
         </div>
         <figcaption><span class="title">After letting go</span>
@@ -445,7 +456,7 @@
           <span class="pin" style="left:90.6%;top:12.6%">1</span>
           <span class="pin" style="left:71.4%;top:20.1%">2</span>
           <span class="pin" style="left:48.6%;top:36.7%">3</span>
-          <span class="pin" style="left:90.3%;top:42.2%">4</span>
+          <span class="pin" style="left:97%;top:56.5%">4</span>
         </div>
         <figcaption><span class="title">A map with problems</span>
           <ol>
@@ -465,7 +476,12 @@
         <li><b>Each constituency is in one piece</b>. This is a warning only; uninhabited islands don't count.</li>
       </ul>
       <div class="callout"><b>You don't have to fix everything</b>The simulator still runs an election on a map with errors. Fixing them just makes your map more realistic.</div>
-      <div class="callout"><b>Read your map's "EBRC report"</b>Below the checks, <span class="ui">Generate EBRC report</span> writes a mock version of the report the Electoral Boundaries Review Committee publishes before each election, for the map you drew. It has a letter to the Prime Minister, numbered paragraphs explaining which neighbourhoods move where, a table of every constituency and black-and-white maps. It is for fun and learning only: every page is marked as a simulation, it is not an official document, and it can only be read in the app, not downloaded or printed.</div>
+      <h3 id="step1-ebrc">Read your map's "EBRC report"</h3>
+      <p>Below the checks, <span class="ui">Generate EBRC report</span> writes a mock version of the report the Electoral Boundaries Review Committee publishes before each election, for the map you drew. It has a letter to the Prime Minister, numbered paragraphs explaining which neighbourhoods move where, a table of every constituency, black-and-white maps with the 2025 lines dashed, and a list of what happened to each 2025 constituency. Like the real report, it says nothing about parties or votes. Use <span class="ui">Jump to…</span> at the top to go straight to a part.</p>
+      <figure class="shot">
+        <div class="frame"><img src="/guide/27-ebrc-report.jpg" alt="The cover page of the mock EBRC report, marked as a simulation and not an official document" loading="lazy" /></div>
+        <figcaption><span class="title">The mock EBRC report</span> It is for fun and learning only: every page is marked as a simulation, it is not an official document, and it can only be read in the app, not downloaded or printed.</figcaption>
+      </figure>
 
       <h3 id="step1-lens">Map lenses: see who lives where</h3>
       <p>The <b>Map lens</b> buttons recolour the map to show facts about each neighbourhood. They help you draw smarter boundaries. For example, you can see where young voters live, or which areas voted most strongly for the opposition in 2025.</p>
@@ -486,6 +502,34 @@
         </figcaption>
       </figure>
       <div class="callout"><b>2025 or 2030 voters?</b>The <span class="ui">2025 register</span> / <span class="ui">2030 projection</span> switch at the top changes the voter numbers everywhere. The 2030 projection adds about 115,000 extra voters, mostly in estates still filling up, such as Tengah. A seat that is a fair size today may be too big by 2030.</div>
+      <h3 id="step1-compare">Compare with past boundaries</h3>
+      <p>Singapore's map is redrawn before almost every election. To see how yours compares, click <span class="ui"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg> Compare with past boundaries</span> under the map lenses. The past election's map appears on the <b>left</b> of a white divider and your map on the <b>right</b>. Drag the divider across the map to swipe between them, and move the year slider to pick the election: <b>GE2006, GE2011, GE2015, GE2020 or GE2025</b>.</p>
+      <figure class="shot">
+        <div class="frame"><img src="/guide/25-compare-boundaries.jpg" alt="Swipe comparison: GE2015 boundaries on the left of a white divider, the user's map on the right, with a comparison table in the side panel" loading="lazy" />
+          <span class="pin" style="left:71.4%;top:15.6%">1</span>
+          <span class="pin" style="left:92.4%;top:9.5%">2</span>
+          <span class="pin" style="left:35.4%;top:64%">3</span>
+          <span class="pin" style="left:12%;top:36%">4</span>
+          <span class="pin" style="left:26.5%;top:52.8%">5</span>
+          <span class="pin" style="left:71.4%;top:27%">6</span>
+          <span class="pin" style="left:71.4%;top:53.5%">7</span>
+          <span class="pin" style="left:71.4%;top:63.5%">8</span>
+        </div>
+        <figcaption><span class="title">Your map against GE2015</span>
+          <ol>
+            <li><b>Year slider:</b> pick the past election. The arrow at the end is a reminder that you are comparing it with your own map.</li>
+            <li><b>Swipe on map</b> turns the split-screen view on or off.</li>
+            <li><b>The divider.</b> Drag the white handle left or right (on a phone, with your finger). With the keyboard, select the handle and use the arrow keys.</li>
+            <li><b>The past map:</b> GE2015's 29 constituencies, each in its own colour, with their names.</li>
+            <li><b>Hover a past constituency</b> to see its size and its real result that year, here Chua Chu Kang GRC: PAP 76.9%, PPP 23.1%.</li>
+            <li><b>Then and now:</b> constituencies, SMCs, GRCs by size, MPs, voters, and voters per MP (including the biggest and smallest), for that year against your map.</li>
+            <li><b>Similarity:</b> the share of voters who stay with most of their old neighbours. Your seats are counted as the <i>same</i> (98% or more of their voters both ways), <i>redrawn</i> (60% or more) or <i>new</i>.</li>
+            <li><b>What happened to each old constituency:</b> kept, redrawn, merged into a bigger seat, or split up, and where its voters went.</li>
+          </ol>
+        </figcaption>
+      </figure>
+      <p>Further down the panel, a small chart shows how many MPs were elected in SMCs and in GRCs at each election, with your map at the end. When you select one of your constituencies, its card also says <b>what the area was at that election</b> (for example "Sengkang GRC 100%") and roughly <b>how it voted</b> then. <span class="ui">Show seat history 2006–2025</span> traces it back through every election.</p>
+      <div class="callout"><b>Why only from 2006?</b>The Elections Department publishes digital maps of the boundaries from GE2006 onwards. Earlier maps exist only as paper plans, so there is nothing reliable to line up with today's map. Votes "on your boundaries" for a past year are estimates: each neighbourhood takes the result of the constituency it was in that year.</div>
       <h3 id="step1-auto">Auto-draw: let the computer draw the map</h3>
       <p>Drawing about 30 constituencies by hand takes time. <b>Auto-draw</b> does it for you. Click <span class="ui"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg> Auto-draw the whole map</span> under <i>Start from</i>, pick a method, adjust a few settings, and press <span class="ui"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg> Draw the map</span>. A few seconds later you have a complete new map that follows the rules. You can then fine-tune it by hand, or press Undo.</p>
       <figure class="shot">
@@ -499,9 +543,9 @@
         <figcaption><span class="title">The Auto-draw panel</span>
           <ol>
             <li><b>Choose a method</b> (explained below).</li>
-            <li><b>Settings for that method</b>, such as how many seats and SMCs.</li>
-            <li><b>Fairness limit:</b> how far any seat's voters per MP may be from the national average. <b>Variation:</b> each number gives a different map with the same settings; <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect width="12" height="12" x="2" y="10" rx="2" ry="2"/><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"/><path d="M6 18h.01"/><path d="M10 14h.01"/><path d="M15 6h.01"/><path d="M18 9h.01"/></svg> picks one at random.</li>
-            <li><b>Draw the map.</b> It replaces your current map, and Undo brings the old one back.</li>
+            <li><b>Settings for that method.</b> For EBRC-style, first choose whether to start from the GE2025 map or your current one.</li>
+            <li><b>Opposition-held seats:</b> leave them untouched, allow minor changes only if needed, or redraw them like any other seat.</li>
+            <li><b>Seat structure:</b> let the simulator decide (<span class="ui">Auto</span>), or <span class="ui">Choose GRCs</span> to set the exact mix, plus the total seats and minimum SMCs. Scroll down for the <b>fairness limit</b> (how far any seat's voters per MP may be from the national average), the <b>variation</b> number (each gives a different map; <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect width="12" height="12" x="2" y="10" rx="2" ry="2"/><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"/><path d="M6 18h.01"/><path d="M10 14h.01"/><path d="M15 6h.01"/><path d="M18 9h.01"/></svg> picks one at random) and <b>Draw the map</b>, which replaces your current map (Undo brings the old one back).</li>
             <li><b>Manual tools</b> takes you back to painting by hand.</li>
           </ol>
         </figcaption>
@@ -573,17 +617,32 @@
           <span class="pin" style="left:71.4%;top:20%">1</span>
           <span class="pin" style="left:71.4%;top:24.7%">2</span>
           <span class="pin" style="left:71.4%;top:34.6%">3</span>
-          <span class="pin" style="left:48.6%;top:50%">4</span>
-          <span class="pin" style="left:31.6%;top:93.7%">5</span>
+          <span class="pin" style="left:71.4%;top:44.5%">4</span>
+          <span class="pin" style="left:48.6%;top:50%">5</span>
+          <span class="pin" style="left:31.6%;top:93.7%">6</span>
         </div>
         <figcaption><span class="title">The Contests tab</span>
           <ol>
             <li><b>Auto…</b> sets up every seat at once. For each party, choose where it stands (where it stood in 2025, its best seats up to a cap, every seat, or nowhere) and where its big names go. You can also pin a person to a seat and pick which opposition parties stand down for each other. <b>Reset to defaults</b> undoes your changes. <b>Straight fights only</b> removes extra parties so each seat is a two-way race.</li>
+            <li><b>Pick anchor leaders</b> on or off (see <a href="#leaders">Anchor leaders</a>).</li>
             <li><b>Seats contested</b> by each party across the country.</li>
             <li><b>Every constituency</b> with badges for the parties standing there. Click one to open it.</li>
             <li><b>The map</b> is coloured by the <i>main challenger</i> in each seat. For example, light blue areas are where the WP takes on the PAP.</li>
             <li><b>Colour key.</b> Grey means a walkover.</li>
           </ol>
+        </figcaption>
+      </figure>
+      <h3 id="auto-lineups">Auto line-ups: set up every seat at once</h3>
+      <p><span class="ui">Auto…</span> opens a box with one row per party. Change a few settings and press <span class="ui">Apply line-ups</span> to rewrite every seat's line-up in one go.</p>
+      <figure class="shot">
+        <div class="frame"><img src="/guide/29-auto-lineups.jpg" alt="The Auto line-ups box: for each party, where it stands and where its anchor leaders go, with a result summary at the bottom" loading="lazy" /></div>
+        <figcaption><span class="title">Auto line-ups</span>
+          <ul>
+            <li><b>Where each party stands:</b> where it stood in 2025, its best seats up to a number you choose, every seat, or nowhere.</li>
+            <li><b>Where its big names go:</b> keep them in their 2025 home seats, send them to battlegrounds, or put them in safe seats. <span class="ui">+ Pin a leader to a seat</span> fixes one person to one seat.</li>
+            <li><b>Opposition cooperation</b> (further down): tick which opposition parties agree not to stand against each other, to avoid three-cornered fights.</li>
+            <li><b>Result</b> along the bottom: seats each party will contest, multi-cornered fights and walkovers, before you apply.</li>
+          </ul>
         </figcaption>
       </figure>
       <h3>Changing a line-up</h3>
@@ -619,6 +678,7 @@
         <li><b>Leader effect:</b> the simulator suggests how many extra points a leader brings <i>compared with the 2025 anchor for those voters</i>. For example, the Prime Minister is worth about +3 points, a minister +1.5 and a party leader +1 to +2. Moving a big name to a new seat helps there, and the seat they leave behind loses that boost. The slider is only a suggestion; set it to whatever you believe.</li>
       </ul>
       <p>Leaders appear throughout the night: "WP team led by … GAIN from PAP", in the results list, and when you hover over the map.</p>
+      <div class="callout"><b>Don't want to choose people?</b>Untick <span class="ui">Pick anchor leaders</span> at the top of the Contests panel. You then only choose which parties stand in each seat, and nobody gets a leader effect. Your earlier picks are kept and come back if you tick it again.</div>
       <h3>Party strength and new parties</h3>
       <p>At the bottom of the Contests panel, the <b>Party strength</b> sliders say how strong each opposition party is. It is set from how well each party did in 2025, with WP at 1.0. A stronger party gets more votes when it stands somewhere new, and takes more of the opposition vote in multi-party fights. You can also <b>add your own party</b>: give it a short code (like "NEW"), a name and a colour, then add it to seats like any other party.</p>
       <div class="next"><a href="#step1"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg> Draw boundaries</a><a href="#step3">Next: Swings & forecast <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a></div>
@@ -787,12 +847,13 @@
       <figure class="shot">
         <div class="frame"><img src="/guide/16-night-result.jpg" alt="The final result: PAP forms the government with 76 of 98 seats" loading="lazy" />
           <span class="pin" style="left:35.4%;top:23.6%">1</span>
-          <span class="pin" style="left:71.5%;top:22.2%">2</span>
-          <span class="pin" style="left:71.5%;top:30%">3</span>
+          <span class="pin" style="left:71.5%;top:26.5%">2</span>
+          <span class="pin" style="left:71.5%;top:33%">3</span>
           <span class="pin" style="left:71.5%;top:73.4%">4</span>
-          <span class="pin" style="left:71.5%;top:85.3%">5</span>
+          <span class="pin" style="left:71.5%;top:94%">5</span>
           <span class="pin" style="left:51.5%;top:77.8%">6</span>
           <span class="pin" style="left:71.5%;top:16.3%">7</span>
+          <span class="pin" style="left:71.5%;top:21%">8</span>
         </div>
         <figcaption><span class="title">The final result</span>
           <ol>
@@ -800,12 +861,14 @@
             <li><b>Verdict:</b> who forms the government and whether they kept two-thirds.</li>
             <li><b>Results table:</b> seats, total votes and national vote share for every party, e.g. "WP 21 seats, 450,884 votes, 17.9%". <b>vs 2025</b> shows the change from the real 2025 result (green = up, red = down). If any NCMP seats are offered, they appear as "+2N" and in a list below.</li>
             <li><b>Changing hands:</b> every seat won by a different party than in 2025, with the winning team's leader. The amber note above it is a reminder that this is a simulation you made, not a poll.</li>
-            <li><b>Announcements:</b> scroll down to see every result from the night. Occasional <b>news flashes</b> (Breaking, Projection, Analysis) are mixed in: the first result, seats changing hands, photo finishes, the moment a party wins a majority, and a final round-up. The latest flash also appears briefly across the top of the map.</li>
+            <li><b><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg> Compare with past elections:</b> your night against GE2006 to GE2025 (see <a href="#compare-results">below</a>).</li>
             <li><b>The finished parliament.</b> If any NCMP seats are offered, they appear as coloured rings underneath the chart.</li>
             <li><b>Read the election report</b> reopens the full report on the night (see below). The same button appears over the map.</li>
+            <li><b>Mock newspapers:</b> a write-up of your night in English or Mandarin (see <a href="#news">Mock news article</a>).</li>
           </ol>
         </figcaption>
       </figure>
+      <p><b>Announcements:</b> scroll down the panel to see every result from the night. Occasional <b>news flashes</b> (Breaking, Projection, Analysis) are mixed in: the first result, seats changing hands, photo finishes, the moment a party wins a majority, and a final round-up. The latest flash also appears briefly across the top of the map.</p>
       <figure class="shot">
         <div class="frame"><img src="/guide/17-night-map.jpg" alt="The final election night map zoomed on the east, coloured by winning party" loading="lazy" />
           <span class="pin" style="left:29.9%;top:52.2%">1</span>
@@ -856,6 +919,39 @@
         <li><b>All seats</b> lists every constituency with filters for seats that changed hands, close seats and redrawn seats. Click a name to close the report and see that seat on the map. <b>Terms</b> explains every election word used. Underlined words in the report also explain themselves when you hover over or tap them.</li>
       </ol>
 
+      <h3 id="news">Mock news article</h3>
+      <p>Once every result is in, the two newspaper buttons in the Result panel open a mock front-page write-up of your night: <span class="ui">The Straits Times (mock)</span> in English, or <span class="ui">联合早报（模拟）</span>, a Mandarin <i>Lianhe Zaobao</i> version written natively in Chinese. Switch language with the buttons at the top. It covers the count, the campaign and a voter analysis, with a results table and the new Parliament. Every figure comes from your election report.</p>
+      <figure class="shot">
+        <div class="frame"><img src="/guide/28-news-article.jpg" alt="A mock Straits Times front page: GE2030: PAP returned with 76 seats as vote share slips, marked as a simulation" loading="lazy" /></div>
+        <figcaption><span class="title">The mock Straits Times</span> It quotes nobody and is marked as a simulation on every part of the page. The pictures are drawn placeholders. You can choose to generate AI pictures instead, which sends short generic scene descriptions (never your map or any personal data) to the free service Pollinations.ai.</figcaption>
+      </figure>
+
+      <h3 id="compare-results">Compare with past elections</h3>
+      <p>At the end of the night, click <span class="ui"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg> Compare with past elections</span> at the bottom of the Result panel. Pick an election with the slider (GE2006 to GE2025). The map splits in two: that election's <b>winners</b> on the left of the white divider, <b>your results</b> on the right. Drag the divider to swipe between them.</p>
+      <figure class="shot">
+        <div class="frame"><img src="/guide/26-compare-results.jpg" alt="Election night compared with GE2020: GE2020 winners on the left of the divider, the simulated results on the right, with two parliament charts and a party table in the panel" loading="lazy" />
+          <span class="pin" style="left:71.4%;top:15.6%">1</span>
+          <span class="pin" style="left:92.4%;top:9.5%">2</span>
+          <span class="pin" style="left:17%;top:40%">3</span>
+          <span class="pin" style="left:45%;top:62%">4</span>
+          <span class="pin" style="left:71.4%;top:30%">5</span>
+          <span class="pin" style="left:71.4%;top:52%">6</span>
+          <span class="pin" style="left:71.4%;top:92%">7</span>
+        </div>
+        <figcaption><span class="title">Your night against GE2020</span>
+          <ol>
+            <li><b>Year slider:</b> pick the past election.</li>
+            <li><b>Swipe on map</b> turns the split view on or off.</li>
+            <li><b>GE2020's winners</b> on GE2020's boundaries, shaded like your map: paler means a closer race. Hover a constituency for its real result.</li>
+            <li><b>Your results</b> on your boundaries.</li>
+            <li><b>Two parliament charts:</b> GE2020 (PAP 83, WP 10) next to yours.</li>
+            <li><b>Party by party:</b> seats then and now with the change, and vote share then and now with the change in points. "New" marks parties that did not stand that year.</li>
+            <li><b>Headline numbers:</b> opposition seats, turnout, walkovers and the closest seat, then and now.</li>
+          </ol>
+        </figcaption>
+      </figure>
+      <p>Scroll down for two small charts, the PAP's national vote share and the number of opposition MPs at each election, with your GE2030 added at the end. The last table, <b>Your seats vs GE2020 on the same boundaries</b>, estimates how each of your constituencies voted in that past election and shows the swing since then. Seats marked <b>FLIP</b> went to a different party. Sort it by the biggest swing either way.</p>
+
       <h3 id="coalitions">Hung parliaments and coalitions</h3>
       <p>If no party wins more than half the seats (49 of 97 on the GE2025 map), the result is a <b>hung parliament</b>. The Result panel then shows a <span class="ui"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m11 17 2 2a1 1 0 1 0 3-3"/><path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4"/><path d="m21 3 1 11h-2"/><path d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3"/><path d="M3 4h8"/></svg> Build a coalition</span> box, and the Swings &amp; forecast tab shows the same box whenever the projection is hung. To try it quickly, pick the <span class="ui">Hung parliament</span> scenario on the forecast tab.</p>
       <ol class="steps">
@@ -885,7 +981,7 @@
     <section id="faq">
       <h2>Tips & FAQ</h2>
       <details open><summary>Is this a real prediction of GE2030?</summary><p>No. It's a tool for exploring "what if" scenarios, for fun and learning. The results only reflect the choices you make. It isn't affiliated with the Elections Department or any political party.</p></details>
-      <details><summary>Where do the numbers come from?</summary><p>Official public data. Boundaries, 2025 results and voter numbers come from the Elections Department (ELD). Neighbourhood boundaries and land use come from the Urban Redevelopment Authority (URA). Age, ethnicity and housing come from the 2020 Census by the Department of Statistics. All are published on data.gov.sg. Every 2025 constituency adds up to its exact official number of voters.</p></details>
+      <details><summary>Where do the numbers come from?</summary><p>Official public data. Boundaries (2006 to 2025), results and voter numbers come from the Elections Department (ELD). Neighbourhood boundaries and land use come from the Urban Redevelopment Authority (URA). Age, ethnicity and housing come from the 2020 Census by the Department of Statistics. All are published on data.gov.sg. Every 2025 constituency adds up to its exact official number of voters.</p></details>
       <details><summary>How accurate are the numbers for each small area?</summary><p>They are careful estimates. Official figures are only published for whole constituencies, so the simulator spreads each constituency's voters across its neighbourhoods using census and housing data. Totals per 2025 constituency are exact; individual blocks are close approximations.</p></details>
       <details><summary>If I don't change anything, do I get the real 2025 result?</summary><p>Yes. With the 2025 map, default contests and all swings at zero, the forecast reproduces the real GE2025 result: PAP 87 seats, WP 10. Every contested constituency's vote share is within a fraction of a percent.</p></details>
       <details><summary>Why does Marine Parade–Braddell Heights show a contest?</summary><p>In 2025 it was a walkover, so nobody actually voted there. For 2030 the simulator assumes the WP will contest it (the WP had planned to in 2025). Its starting vote (about 62% PAP) is an estimate, because there's no real 2025 result to use. To keep it a walkover, remove WP in Step 2.</p></details>
@@ -894,6 +990,7 @@
       <details><summary>Why can't I get exactly 97 seats?</summary><p>You can! Seats = number of SMCs + MPs in each GRC. Adjust GRC sizes (3–6) or add and remove constituencies until the total matches. Parliament can also change size between elections, so any total is allowed. The count is shown as information only.</p></details>
       <details><summary>Why is part of my map pale or white?</summary><p><b>Pale</b> areas have no voters: industrial land, the airport, nature reserves and offshore islands. <b>White</b> areas are populated places that aren't in any constituency yet. The Checks box will flag them.</p></details>
       <details><summary>My mouse drags the map instead of painting (or the other way round)</summary><p>With Paint, Erase or Lasso selected, dragging draws. To move the map instead, hold <kbd>Space</kbd> while dragging, switch to the Pan tool (<kbd>H</kbd>), or use the scroll wheel to zoom.</p></details>
+      <details><summary>Why do the comparisons only go back to 2006?</summary><p>The Elections Department publishes digital boundary maps from GE2006 onwards (2006, 2011, 2015, 2020 and 2025), and the comparisons need a map to line up with today's neighbourhoods. Past results, voter numbers and boundaries all come from the Elections Department via data.gov.sg. Figures for a past year "on your boundaries" are estimates, worked out from the constituency each neighbourhood was in at the time.</p></details>
       <details><summary>Does it work on a phone?</summary><p>Yes. The map sits on top and the controls below. Drawing boundaries is easier with a mouse on a bigger screen, but forecasting and election night work well on phones. Choosing anchor leaders uses your phone's own picker, so there's no typing.</p></details>
       <details><summary>Keyboard shortcuts</summary><p><kbd>1</kbd>–<kbd>4</kbd> switch tabs. <kbd>V</kbd> Select, <kbd>B</kbd> Paint, <kbd>G</kbd> Fill, <kbd>L</kbd> Lasso, <kbd>E</kbd> Erase, <kbd>H</kbd> Pan. <kbd>Space</kbd> (hold) pans the map. <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes and <kbd>Ctrl</kbd>+<kbd>Y</kbd> redoes.</p></details>
       <p style="margin-top:28px"><a class="open-app" href="./" style="display:inline-flex">Open the simulator and try it <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a></p>

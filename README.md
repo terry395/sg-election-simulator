@@ -1,6 +1,8 @@
 # GE2030 Simulator — Singapore
 
-An interactive web app for political enthusiasts: redraw Singapore's electoral boundaries, decide who contests each seat, set national / party / demographic / constituency swings, and play out a simulated election night.
+An interactive web app for political enthusiasts: redraw Singapore's electoral boundaries, decide who contests each seat, set national / party / demographic / constituency swings, and play out a simulated election night. Compare your map and your results with every general election from GE2006 to GE2025.
+
+> **Built entirely with [Claude Code](https://claude.com/claude-code).** Every part of this project was written by Claude Code, Anthropic's AI coding agent: the app, the data pipeline, the tests, the beginner guide and its screenshots, and this README. See [How it was built](#how-it-was-built).
 
 **Live:** https://terry395.github.io/sg-election-simulator/ · **New to it?** Read the [beginner guide](https://terry395.github.io/sg-election-simulator/guide.html). It covers every step with screenshots and explains election terms in plain English.
 
@@ -17,6 +19,9 @@ An interactive web app for political enthusiasts: redraw Singapore's electoral b
    - live projected Parliament and a closest-seats table
    - 2,000-run Monte Carlo in a Web Worker: majority and two-thirds probabilities, seat ranges and per-seat win probabilities
 4. **Election night**: polls close at 8pm, then sample counts arrive (±4%). Declarations follow through the night, smaller SMCs first and big GRCs last, with recounts in close seats. The map fills in live alongside the seat tally, majority call, gains, popular vote vs GE2025 and NCMP allocation. Occasional news flashes (first result, seats changing hands, photo finishes, majority and supermajority calls, final round-up) appear in the announcements feed and as a ticker over the map.
+5. **Compare with past elections** (GE2006, GE2011, GE2015, GE2020 and GE2025, the elections with official boundary maps):
+   - **Boundaries:** in the Draw step, a swipe divider on the map shows a past election's real boundaries on the left and your map on the right, with a year slider. Alongside: constituencies, SMCs and GRCs by size, MPs, electors and electors per MP then and now; a similarity score; which of your seats are the same, redrawn or new; what happened to each old constituency (kept, redrawn, merged or split); and a chart of SMC and GRC seats over time. Each of your seats shows what the area was in that year, how it voted, and its history back to 2006.
+   - **Results:** at the end of election night, the same swipe shows that year's winners against your results. You also get parliament charts side by side, every party's seats and vote share then and now, opposition seats, turnout, walkovers and closest seats, trend charts of the PAP vote and opposition MPs, and a table of your seats against the past election on the same boundaries (estimated), with swings and seats that flip.
 
 - **Election report:** when the count ends, an in-app report explains the night in plain, neutral English. It covers the boundary changes (unchanged / redrawn / new seats, voters moved, seat sizes, and who would have won on 2025 votes with the new lines), the contests (fights, party performance where they stood, leaders, line-up edits) and the swings (each setting in words, plus every seat's change split into "your settings" and "random surprises"). It then gives the final results (gains, closest seats, NCMPs, sample-count accuracy, rough tipping points), key points and a filterable table of every seat.
 - **Mock EBRC report:** in the Draw step, "Generate EBRC report" writes a view-only mock of the Electoral Boundaries Review Committee's report for your map. It is laid out like the real White Paper, with a covering letter, numbered paragraphs, terms of reference, elector numbers, recommendations by region naming the neighbourhoods that move, a table of every division (Annex A), black-and-white boundary maps with the 2025 lines dashed (Annex B) and a list of changes to the 2025 divisions (Annex C). Like the real report, it says nothing about parties or votes. Every page is marked as a simulation, not an official document, and it can't be downloaded or printed.
@@ -27,6 +32,10 @@ An interactive web app for political enthusiasts: redraw Singapore's electoral b
 - **Parties:** short, neutral beginner profiles of every party, from the top bar or any party badge.
 - **Works on phones:** a full-screen map with a drag-up panel and a bottom tab bar. Drawing tools float on the map, you draw with one finger and pan or zoom with two, and tapping an area shows its details.
 - Auto-draw names are always unique real place names, such as compass directions or URA neighbourhoods, never numbers.
+
+## How it was built
+
+This project was built entirely by [Claude Code](https://claude.com/claude-code), Anthropic's agentic coding tool, working from plain-English feature requests. Claude Code wrote all of the TypeScript/React app, the redistricting and election models, the Node data pipeline that turns the government datasets into the map, the unit tests, the beginner guide (including the scripts that take its screenshots and record its demo video) and this README. No part of the code was written by hand.
 
 Maps, contests and swings autosave locally and can be shared as a link or exported/imported as JSON. Every shared link and export carries a disclaimer that it is an individual's scenario, not a poll or official projection, and people opening a shared link see the same notice.
 
@@ -56,6 +65,7 @@ The processed data ships in `public/data/`. To rebuild it from source:
 ```bash
 npm run fetch-data   # downloads ELD / URA / SingStat datasets from data.gov.sg into pipeline/raw (~180 MB)
 npm run data         # builds public/data/*.json
+npm run data:history # builds the past-election data (GE2006-GE2025) from the boundary, result and elector files
 ```
 
 How the building blocks are made (`pipeline/build.mjs`):
@@ -66,6 +76,13 @@ How the building blocks are made (`pipeline/build.mjs`):
 5. Each block's GE2025 vote is its constituency result with a small demographic tilt, re-centred to reproduce the real result exactly.
 6. The 2030 projection adds ~4% growth, steered towards residential capacity not yet occupied (new BTO estates).
 
-Sources: Elections Department, Urban Redevelopment Authority, Singapore Department of Statistics (via data.gov.sg, Singapore Open Data Licence). Basemap © OpenFreeMap / OpenStreetMap contributors.
+How the past-election data is made (`pipeline/history.mjs`):
+1. The ELD boundaries for 2006, 2011, 2015, 2020 and 2025 are clipped to the land covered by the building blocks.
+2. Each building block is matched to the past constituencies it lay in, split by area where a past line crosses it.
+3. Results and electors for every constituency come from the ELD results and electors tables. Checks confirm the official seat totals (84, 87, 89, 93 and 97 MPs).
+
+Past results "on your boundaries" are estimates: each block takes the result of the constituency it was in that year, weighted by today's electors.
+
+Sources: Elections Department (including Electoral Boundary 2006, 2011, 2015 and 2020), Urban Redevelopment Authority, Singapore Department of Statistics (via data.gov.sg, Singapore Open Data Licence). Basemap © OpenFreeMap / OpenStreetMap contributors.
 
 Block-level figures are modelled estimates. This is an unofficial fan project, for entertainment and analysis.

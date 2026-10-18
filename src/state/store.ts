@@ -6,12 +6,16 @@ import { buildBlockContext, ge2025Plan, type BlockContext } from '../model/stats
 import { DEFAULT_SWINGS } from '../model/swing'
 import { DEFAULT_RULES, type Rules } from '../model/validation'
 import type { SharedState } from '../share/serialize'
+import type { HistYear } from '../model/history'
 
 export type Tab = 'draw' | 'contests' | 'forecast' | 'night'
 export type Tool = 'paint' | 'fill' | 'lasso' | 'erase' | 'pan' | 'inspect'
 export type Basemap = 'map' | 'satellite'
 const BASEMAP_KEY = 'sg-election-sim:basemap'
 export type Lens = 'constituency' | 'deviation' | 'pap' | 'young' | 'senior' | 'malay' | 'indian' | 'landed' | 'condo' | 'density'
+
+/** comparison with a past election: swipe divider on the map, past on the left (split = divider position, 0–1) */
+export interface Compare { on: boolean; year: HistYear; split: number }
 
 interface Snapshot { constituencies: Constituency[]; assign: (string | null)[] }
 
@@ -41,7 +45,9 @@ interface State {
   partyInfo: string | null
   /** the mock EBRC report is open */
   ebrcOpen: boolean
-    /** the page was opened from someone's share link */
+  /** past-election comparison (not saved or shared) */
+  compare: Compare
+  /** the page was opened from someone's share link */
   fromShare: boolean
 
   init: (d: AppData, shared?: SharedState | null, fromLink?: boolean) => void
@@ -78,6 +84,7 @@ interface State {
 
   showPartyInfo: (id: string | null) => void
   setEbrcOpen: (v: boolean) => void
+  setCompare: (patch: Partial<Compare>) => void
   setSwings: (patch: Partial<Swings>) => void
   resetSwings: () => void
   importState: (s: SharedState) => void
@@ -109,6 +116,7 @@ export const useStore = create<State>((set, get) => ({
   swings: DEFAULT_SWINGS,
   partyInfo: null,
   ebrcOpen: false,
+  compare: { on: false, year: 2020, split: 0.5 },
   fromShare: false,
 
   dismissShareNotice: () => set({ fromShare: false }),
@@ -214,6 +222,7 @@ export const useStore = create<State>((set, get) => ({
 
   showPartyInfo: (partyInfo) => set({ partyInfo }),
   setEbrcOpen: (ebrcOpen) => set({ ebrcOpen }),
+  setCompare: (patch) => set((s) => ({ compare: { ...s.compare, ...patch } })),
   setSwings: (patch) => set((s) => ({ swings: { ...s.swings, ...patch } })),
   resetSwings: () => set({ swings: DEFAULT_SWINGS }),
   importState: (st) =>

@@ -35,3 +35,15 @@ function hsl(h: number, s: number, l: number) {
   const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)))
   return '#' + [f(0), f(8), f(4)].map((x) => Math.round(x * 255).toString(16).padStart(2, '0')).join('')
 }
+
+/** Parties that stood at a past election (GE2006–GE2020) but are not in the simulation. Display only. */
+export const HISTORIC_PARTIES: Record<string, Party> = {
+  RP: { id: 'RP', name: 'Reform Party', color: '#f57c00', strength: 0 },
+  SGF: { id: 'SGF', name: 'Singaporeans First', color: '#9e9d24', strength: 0 },
+  PV: { id: 'PV', name: "Peoples Voice", color: '#5c6bc0', strength: 0 },
+}
+
+/** A party for display: the user's parties first, then past-only parties, then a grey placeholder. */
+export function partyFor(id: string, partyMap: Record<string, Party>): Party {
+  return partyMap[id] ?? HISTORIC_PARTIES[id] ?? { id, name: id, color: '#94a3b8', strength: 0 }
+}

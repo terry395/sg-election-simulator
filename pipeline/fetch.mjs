@@ -10,7 +10,10 @@ fs.mkdirSync(RAW, { recursive: true })
 // data.gov.sg dataset ids
 const DATASETS = {
   'ed2025.geojson': 'd_7ddf956dfc1c59080bf95bba1c58a5d2', // ELD Electoral Boundary 2025
-  'ed2020.geojson': 'd_6077aa5ab73d447b32f451ea224221b6', // ELD Electoral Boundary 2020 (reference)
+  'ed2020.geojson': 'd_6077aa5ab73d447b32f451ea224221b6', // ELD Electoral Boundary 2020
+  'ed2015.geojson': 'd_1dea85025d48bc75ed566eb2696b7e0f', // ELD Electoral Boundary 2015
+  'ed2011.geojson': 'd_305b03ed3c477aba648eeddaea2d4279', // ELD Electoral Boundary 2011
+  'ed2006.geojson': 'd_7fb48bf0b7b7c8deeccfb2b40d120e08', // ELD Electoral Boundary 2006
   'subzone2019.geojson': 'd_8594ae9ff96d0c708bc2af633048edfb', // URA MP2019 Subzone Boundary (No Sea)
   'landuse2019.geojson': 'd_90d86daa5bfaa371668b84fa5f01424f', // URA MP2019 Land Use (~170 MB)
   'age2020.csv': 'd_d95ae740c0f8961a0b10435836660ce0', // Census 2020: subzone x age x sex

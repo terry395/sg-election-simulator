@@ -18,6 +18,7 @@ import { rng } from '../model/rng'
 import { PAP } from '../data/parties'
 import type { Constituency, Party } from '../types'
 import { useSheet } from '../lib/sheet'
+import { CompareResults } from './ComparePanels'
 
 const SPEEDS = [{ v: 2, label: '1×' }, { v: 6, label: '3×' }, { v: 20, label: '10×' }]
 
@@ -157,6 +158,7 @@ function NightLive({ onRestart }: { onRestart: () => void }) {
       </Section>
 
       {done && <FinalSummary plan={plan} partyMap={partyMap} />}
+      {done && <CompareResults />}
 
       <Section title="Announcements">
         <ul className="space-y-1.5">
