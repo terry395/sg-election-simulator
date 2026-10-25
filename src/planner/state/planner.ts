@@ -2,9 +2,10 @@ import { create } from 'zustand'
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string'
 import type { PlannerData } from '../data/loadPlanner'
 import { DEFAULT_POLICY, type PopulationPolicy } from '../data/demographics'
-import { PHASES, type PhaseId } from '../model/population'
-import { emptyPlan, type NationalPlan } from '../model/simulate'
-import { buildBlocked, hasLandBy, reclaimBlocked, reclaimedCount } from '../model/rules'
+import { PHASES, project, type PhaseId } from '../model/population'
+import { emptyPlan, simulate, type NationalPlan } from '../model/simulate'
+import { buildBlocked, hasLandBy, planIssues, reclaimBlocked, reclaimedCount } from '../model/rules'
+import { DEFAULT_AUTO, autoPlan, fixPlan, strategyOptions, type AutoOptions, type PhaseSummary } from '../model/autoplan'
 import { PRESETS } from '../model/presets'
 import { ZONES, type Density, type ZoneId } from '../model/zones'
 
@@ -32,6 +33,11 @@ interface PlannerState {
   /** why the last cells could not be changed */
   notice: { text: string; n: number; at: number } | null
   reportOpen: boolean
+  /** the auto-planner's last strategy and settings */
+  strategy: string
+  autoOptions: AutoOptions
+  /** what the last auto-plan or fix did (null = nothing to show) */
+  autoResult: { kind: 'auto' | 'fix'; summary: PhaseSummary[]; issuesBefore: number; issuesAfter: number } | null
 
   init: (d: PlannerData) => void
   setTab: (t: PlannerTab) => void
@@ -45,6 +51,13 @@ interface PlannerState {
   setSelected: (i: number | null) => void
   setReportOpen: (v: boolean) => void
   clearNotice: () => void
+  setStrategy: (id: string) => void
+  setAutoOptions: (patch: Partial<AutoOptions>) => void
+  /** generate a plan with the auto-planner (undoable) */
+  runAuto: () => void
+  /** add projects that resolve the plan checks (undoable) */
+  runFix: () => void
+  clearAutoResult: () => void
 
   checkpoint: () => void
   /** paint the selected zone, or reclaim with the reclaim tool */
@@ -101,6 +114,9 @@ export const usePlanner = create<PlannerState>((set, get) => ({
   selected: null,
   notice: null,
   reportOpen: false,
+  strategy: 'balanced',
+  autoOptions: DEFAULT_AUTO,
+  autoResult: null,
 
   init: (data) => set({ data, ...loadSaved(data.n) }),
   setTab: (tab) => set({ tab }),
@@ -114,6 +130,11 @@ export const usePlanner = create<PlannerState>((set, get) => ({
   setSelected: (selected) => set({ selected }),
   setReportOpen: (reportOpen) => set({ reportOpen }),
   clearNotice: () => set({ notice: null }),
+  setStrategy: (strategy) => set((s) => ({ strategy, autoOptions: strategyOptions(strategy, s.autoOptions) })),
+  setAutoOptions: (patch) => set((s) => ({ autoOptions: { ...s.autoOptions, ...patch, sites: { ...s.autoOptions.sites, ...patch.sites } } })),
+  runAuto: () => runPlanner('auto'),
+  runFix: () => runPlanner('fix'),
+  clearAutoResult: () => set({ autoResult: null }),
 
   checkpoint: () => set((s) => ({ past: [...s.past.slice(-99), s.plan], future: [] })),
   apply: (cells) => {
@@ -196,5 +217,18 @@ export const usePlanner = create<PlannerState>((set, get) => ({
     return next ? { plan: next, future: s.future.slice(1), past: [...s.past, s.plan] } : {}
   }),
 }))
+
+function runPlanner(kind: 'auto' | 'fix') {
+  const s = usePlanner.getState()
+  if (!s.data) return
+  const projection = project(s.data.file.meta.age2026, s.data.file.meta.female2026, s.policy)
+  const issues = (plan: NationalPlan) => planIssues(simulate(s.data!, plan, projection, s.policy)).length
+  const issuesBefore = issues(s.plan)
+  const result = kind === 'auto'
+    ? autoPlan(s.data, s.plan, projection, s.policy, s.autoOptions, s.phase)
+    : fixPlan(s.data, s.plan, projection, s.policy)
+  s.checkpoint()
+  usePlanner.setState({ plan: result.plan, autoResult: { kind, summary: result.summary, issuesBefore, issuesAfter: issues(result.plan) } })
+}
 
 if (import.meta.env.DEV) (window as unknown as { __planner: typeof usePlanner }).__planner = usePlanner

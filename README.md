@@ -47,6 +47,24 @@ A second simulator, opened from the left sidebar (or the header switch on phones
    - Every phase has a budget.
 
    Ready-made big projects include Long Island, the Greater Southern Waterfront with Tuas Port, a Paya Lebar Air Base new town and a healthcare build-out.
+
+   **Auto-plan** builds the whole plan for you instead of painting hexagons by hand. Pick a strategy:
+   - Balanced growth
+   - Compact city: redevelop older estates at high density around MRT, with no reclamation
+   - Expand to the sea: new islands with towns on them
+   - City in nature: more parks, lower-rise homes
+   - Jobs near homes: regional centres outside the city
+   - Ageing-ready: extra hospitals and eldercare where seniors live
+
+   You can then fine-tune where it may build (land bank, open greenery, redevelopment, reclamation), the public housing share, density, spare homes, targets for parks, MRT access, schools, hospitals and jobs, and how much of the budget it may use. Plan all phases, from the current phase on, or one phase, and either add to your plan or replace those phases. Phase by phase, a greedy, deterministic planner does the following:
+   1. It simulates the plan so far and works out the shortfalls.
+   2. It places hospitals, eldercare and utilities.
+   3. It builds housing in clusters that form towns near MRT and existing homes.
+   4. It puts schools, community buildings and parks within reach of the new homes.
+   5. It adds MRT stations where the most homes are out of reach, then jobs.
+   6. It reclaims land for later phases.
+
+   It stops when the phase's budget runs out and reports any needs left unmet. **Fix my plan** uses the same engine to add the cheapest projects that clear the plan checks. Both are undoable.
 3. **Indicators** for each phase:
    - homes against households
    - parks per 1,000 residents

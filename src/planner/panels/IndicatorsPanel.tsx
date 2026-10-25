@@ -7,6 +7,7 @@ import { usePlannerDerived } from '../state/derived'
 import { PLANNER_REGIONS } from '../data/loadPlanner'
 import type { Snapshot } from '../model/simulate'
 import { PhasePicker } from './common'
+import { AutoResultCard, FixButton } from './AutoPlanPanel'
 import { scoreWord, sgd, thousands } from './format'
 
 const SUBSCORES: { id: keyof Snapshot['subscores']; label: string; weight: number }[] = [
@@ -63,6 +64,7 @@ export function IndicatorsPanel() {
       </Section>
       <Regions s={s} />
       <IssuesList />
+      <FixResult />
     </div>
   )
 }
@@ -109,7 +111,7 @@ function IssuesList() {
   const [open, setOpen] = useState(false)
   const shown = open ? issues : issues.slice(0, 6)
   return (
-    <Section title={`Plan checks (${issues.length})`}>
+    <Section title={`Plan checks (${issues.length})`} right={issues.length ? <FixButton /> : undefined}>
       {!issues.length && <div className="flex items-center gap-2 text-xs text-emerald-300"><CheckCircle2 size={14} aria-hidden /> No problems found in any phase.</div>}
       <ul className="space-y-1">
         {shown.map((i, k) => (
@@ -124,4 +126,9 @@ function IssuesList() {
       {issues.length > 6 && <button onClick={() => setOpen(!open)} className="mt-1 text-[11px] text-sky-300 hover:underline">{open ? 'Show fewer' : `Show all ${issues.length}`}</button>}
     </Section>
   )
+}
+
+function FixResult() {
+  const result = usePlanner((s) => s.autoResult)
+  return result ? <AutoResultCard /> : null
 }

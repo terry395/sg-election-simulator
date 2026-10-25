@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AlertTriangle, Eraser, Hand, Lasso, MousePointer2, PaintBucket, Paintbrush, Redo2, Trash2, Undo2, Waves, X, type LucideIcon } from 'lucide-react'
+import { AlertTriangle, Eraser, Hand, Lasso, MousePointer2, PaintBucket, Paintbrush, Redo2, Trash2, Undo2, Wand2, Waves, X, type LucideIcon } from 'lucide-react'
 import { Button, Section, fmt } from '../../components/ui'
 import { usePlanner, type PlannerTool } from '../state/planner'
 import { usePlannerDerived } from '../state/derived'
@@ -11,6 +11,7 @@ import { LENSES, LENS_LEGEND, PHASE_COLORS } from '../map/colors'
 import { PHASES } from '../model/population'
 import { Meter, PhasePicker } from './common'
 import { sgd, thousands } from './format'
+import { AutoPlanPanel, AutoResultCard, FixButton } from './AutoPlanPanel'
 
 export const PLANNER_TOOLS: { id: PlannerTool; label: string; key: string; icon: LucideIcon; hint: string }[] = [
   { id: 'inspect', label: 'Select', key: 'V', icon: MousePointer2, hint: 'Click a hexagon to see what is there and what the plan does to it' },
@@ -23,9 +24,23 @@ export const PLANNER_TOOLS: { id: PlannerTool; label: string; key: string; icon:
 ]
 
 export function BuildPanel() {
+  const [auto, setAuto] = useState(false)
+  const result = usePlanner((s) => s.autoResult)
+  if (auto) return <AutoPlanPanel onClose={() => setAuto(false)} />
   return (
     <div>
       <Section title="Phase"><PhasePicker /><PhaseMeters /></Section>
+      <Section title="Plan automatically">
+        <button onClick={() => setAuto(true)} className="flex w-full items-center gap-2 rounded-md border border-emerald-500/60 bg-gradient-to-r from-emerald-600/25 to-sky-600/20 px-3 py-2 text-left hover:from-emerald-600/40">
+          <Wand2 size={18} className="shrink-0 text-emerald-300" aria-hidden />
+          <span><span className="block text-sm font-semibold">Auto-plan the nation</span><span className="block text-[11px] text-slate-300">Balanced, compact city, expand to the sea, city in nature, jobs near homes or ageing-ready</span></span>
+        </button>
+        <div className="mt-2 flex items-center gap-2">
+          <FixButton />
+          <span className="text-[11px] leading-snug text-slate-400">Adds the cheapest projects that clear the plan checks.</span>
+        </div>
+      </Section>
+      {result && <AutoResultCard />}
       <Tools />
       <Palette />
       <Lens />
