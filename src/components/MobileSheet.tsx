@@ -16,7 +16,7 @@ const TOP_GAP = 48
 const DRAG_SLOP = 6
 
 /** Draggable bottom sheet holding the side panel on phones. */
-export function MobileSheet({ children, contentKey }: { children: ReactNode; contentKey: string }) {
+export function MobileSheet({ children, contentKey, summary }: { children: ReactNode; contentKey: string; summary?: ReactNode }) {
   const snap = useSheet((s) => s.snap)
   const setSnap = useSheet((s) => s.setSnap)
   const setHeight = useSheet((s) => s.setHeight)
@@ -87,7 +87,7 @@ export function MobileSheet({ children, contentKey }: { children: ReactNode; con
         <button type="button" onClick={cycle} className="flex w-full justify-center pb-1 pt-2" aria-label={snap === 'full' ? 'Lower the panel' : 'Raise the panel'}>
           <span className="h-1.5 w-10 rounded-full bg-slate-600" />
         </button>
-        <SheetSummary />
+        {summary ?? <SheetSummary />}
       </div>
       <div key={contentKey} className="scroll-thin min-h-0 flex-1 overflow-y-auto overscroll-contain border-t border-slate-800 pb-4">
         {children}

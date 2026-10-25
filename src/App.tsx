@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { loadData } from './data/loadData'
 import { useStore, type Tab, type Tool } from './state/store'
 import { DerivedProvider, useDerived } from './state/derived'
@@ -9,13 +9,15 @@ import { ContestPanel } from './panels/ContestPanel'
 import { ForecastPanel } from './panels/ForecastPanel'
 import { NightOverlay, NightPanel, NightParliament } from './panels/NightPanel'
 import { Button, Swatch, fmt } from './components/ui'
-import { AlertTriangle, ArrowRight, BookOpen, Download, Info, Landmark, Loader2, Menu, Moon, PenTool, Share2, ShieldCheck, Swords, TrendingUp, Upload, Vote, X, type LucideIcon } from 'lucide-react'
+import { AlertTriangle, ArrowRight, BookOpen, Building2, Download, Info, Landmark, Loader2, Menu, Moon, PenTool, Share2, ShieldCheck, Swords, TrendingUp, Upload, Vote, X, type LucideIcon } from 'lucide-react'
+import { useApp, type SimApp } from './state/app'
 import { MobileSheet } from './components/MobileSheet'
 import { useSheet } from './lib/sheet'
 import { MapToolbar } from './map/MapToolbar'
 import { useIsMobile } from './lib/useIsMobile'
 import { DISCLAIMER_FULL, DISCLAIMER_SHORT } from './data/disclaimer'
 import { PartyDrawer } from './components/PartyDrawer'
+import { Footer } from './components/Footer'
 import { ElectionReport } from './components/ElectionReport'
 import { EbrcReport } from './components/EbrcReport'
 import { NewsArticle } from './components/NewsArticle'
@@ -28,13 +30,83 @@ const DISCLAIMER = 'Made by an individual with the GE2030 Simulator, for enterta
 const shareText = (url: string) => `My GE2030 scenario on the SG Election Simulator, made for entertainment and education. Not real-life polling, a survey or an official projection.\n${url}`
 const GUIDE_SEEN_KEY = 'sg-election-sim:guide-seen'
 const GUIDE_URL = import.meta.env.BASE_URL + 'guide.html'
+// the planner is a separate chunk, loaded the first time it is opened
+const PlannerApp = lazy(() => import('./planner/PlannerApp'))
+
+const SIMULATORS: { id: SimApp; label: string; full: string; short: string; sub: string; icon: LucideIcon; accent: string }[] = [
+  { id: 'election', label: 'Election', full: 'GE2030 Election Simulator', short: 'GE2030 Simulator', sub: 'Electoral boundaries & election night', icon: Vote, accent: 'bg-rose-600' },
+  { id: 'planner', label: 'Planner', full: 'National Planner', short: 'National Planner', sub: 'Land use & redevelopment to 2050', icon: Building2, accent: 'bg-emerald-600' },
+]
 
 export default function App() {
+  const app = useApp((s) => s.app)
+  return (
+    <div className="flex h-full flex-col overflow-hidden">
+      <Header />
+      <SharedNotice />
+      {app === 'election' && <WelcomeBanner />}
+      <div className="flex min-h-0 flex-1">
+        <SimulatorRail />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          {app === 'election' ? <ElectionApp /> : (
+            <Suspense fallback={<Loading text="Loading the National Planner…" />}><PlannerApp /></Suspense>
+          )}
+        </div>
+      </div>
+      <Footer className="phone:hidden" />
+    </div>
+  )
+}
+
+function Loading({ text }: { text: string }) {
+  return (
+    <div className="flex h-full flex-1 items-center justify-center text-slate-400">
+      <div className="flex flex-col items-center gap-2 text-center"><Loader2 size={28} className="animate-spin text-rose-500" aria-hidden />{text}</div>
+    </div>
+  )
+}
+
+/** Desktop: a slim sidebar of simulator tabs. */
+function SimulatorRail() {
+  const app = useApp((s) => s.app)
+  const setApp = useApp((s) => s.setApp)
+  return (
+    <nav className="flex w-[76px] shrink-0 flex-col items-stretch gap-1 border-r border-slate-800 bg-slate-950 px-1.5 py-2 phone:hidden" aria-label="Simulators">
+      {SIMULATORS.map((x) => (
+        <button key={x.id} onClick={() => setApp(x.id)} aria-current={app === x.id ? 'page' : undefined} title={`${x.full}: ${x.sub}`}
+          className={`flex flex-col items-center gap-1 rounded-lg px-1 py-2 text-[11px] font-medium ${app === x.id ? 'bg-slate-800 text-white ring-1 ring-slate-600' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'}`}>
+          <span className={`flex h-8 w-8 items-center justify-center rounded-md ${app === x.id ? x.accent : 'bg-slate-800'}`}><x.icon size={17} className="text-white" aria-hidden /></span>
+          {x.label}
+        </button>
+      ))}
+    </nav>
+  )
+}
+
+/** Phones: the same switch as a two-button pill in the header. */
+function SimulatorPill() {
+  const app = useApp((s) => s.app)
+  const setApp = useApp((s) => s.setApp)
+  return (
+    <div className="flex shrink-0 overflow-hidden rounded-md border border-slate-700 desk:hidden" role="group" aria-label="Simulator">
+      {SIMULATORS.map((x) => (
+        <button key={x.id} onClick={() => setApp(x.id)} aria-pressed={app === x.id} aria-label={x.full}
+          className={`flex min-h-9 items-center px-2.5 ${app === x.id ? `${x.accent} text-white` : 'text-slate-300'}`}>
+          <x.icon size={16} aria-hidden />
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function ElectionApp() {
   const data = useStore((s) => s.data)
   const init = useStore((s) => s.init)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    // switching simulators keeps the election as it was
+    if (useStore.getState().data) return
     loadData()
       .then((d) => {
         const hash = new URLSearchParams(location.hash.slice(1)).get('s')
@@ -52,11 +124,7 @@ export default function App() {
   }, [init])
 
   if (error) return <div className="p-8 text-red-300">Failed to load data: {error}</div>
-  if (!data) return (
-    <div className="flex h-full items-center justify-center text-slate-400">
-      <div className="flex flex-col items-center gap-2 text-center"><Loader2 size={28} className="animate-spin text-rose-500" aria-hidden />Loading electoral map…</div>
-    </div>
-  )
+  if (!data) return <Loading text="Loading electoral map…" />
   return (
     <DerivedProvider>
       <Shell />
@@ -80,11 +148,16 @@ function Shell() {
   useAutosave()
 
   // a changed map, contest or swing invalidates an election night in progress
+  // (not on mount, so coming back from the planner keeps the night as it was)
   const contestOverrides = useStore((s) => s.contestOverrides)
   const swings = useStore((s) => s.swings)
   const year = useStore((s) => s.year)
   const parties = useStore((s) => s.parties)
-  useEffect(() => { resetNight() }, [plan, contestOverrides, swings, year, parties, resetNight])
+  const mounted = useRef(false)
+  useEffect(() => {
+    if (!mounted.current) { mounted.current = true; return }
+    resetNight()
+  }, [plan, contestOverrides, swings, year, parties, resetNight])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -115,10 +188,7 @@ function Shell() {
   )
   return (
     // phones: full-screen map with the panel in a bottom sheet; desktop: map with a scrolling side panel
-    <div className="flex h-full flex-col overflow-hidden">
-      <Header />
-      <SharedNotice />
-      <WelcomeBanner />
+    <div className="flex min-h-0 flex-1 flex-col">
       <PartyDrawer />
       <nav className="flex shrink-0 gap-1 overflow-x-auto border-b border-slate-800 bg-slate-950 px-3 phone:hidden">
         {TABS.map((t) => (
@@ -142,7 +212,7 @@ function Shell() {
           </aside>
         )}
       </main>
-      <Footer />
+      <Footer className="desk:hidden" />
       <BottomTabs />
       <ElectionReport />
       <EbrcReport />
@@ -245,21 +315,16 @@ function WelcomeBanner() {
   )
 }
 
-/** Persistent disclaimer strip at the bottom of the app. */
-function Footer() {
-  return (
-    <footer className="flex shrink-0 items-center gap-1.5 border-t border-slate-800 bg-slate-950 px-4 py-1 text-[10px] text-slate-500 phone:px-3 phone:py-0.5 phone:text-[9px] phone:leading-tight">
-      <ShieldCheck size={12} className="shrink-0" aria-hidden />
-      <span>{DISCLAIMER_SHORT} Not affiliated with the Elections Department or any political party.</span>
-    </footer>
-  )
-}
 
 function Header() {
+  const app = useApp((s) => s.app)
   const year = useStore((s) => s.year)
   const setYear = useStore((s) => s.setYear)
-  const data = useStore((s) => s.data)!
+  const data = useStore((s) => s.data)
   const importState = useStore((s) => s.importState)
+  const sim = SIMULATORS.find((x) => x.id === app)!
+  // election controls need the election data
+  const election = app === 'election' && !!data
   const [msg, setMsg] = useState<string | null>(null)
   const [about, setAbout] = useState(false)
   const [menu, setMenu] = useState(false)
@@ -280,13 +345,13 @@ function Header() {
     try {
       const j = JSON.parse(await f.text())
       const st = j.state as SharedState
-      if (!st?.plan?.constituencies || st.plan.assign.length !== data.blocks.length) throw new Error('bad file')
+      if (!data || !st?.plan?.constituencies || st.plan.assign.length !== data.blocks.length) throw new Error('bad file')
       importState({ ...st, customParties: st.customParties ?? [] })
       flash('Map imported')
     } catch { flash('That file is not a simulator map') }
   }
 
-  const electors = year === 2030 ? data.ge.totalElectors2030 : data.ge.totalElectors
+  const electors = data ? (year === 2030 ? data.ge.totalElectors2030 : data.ge.totalElectors) : 0
   const electorToggle = (
     <div className="flex flex-wrap items-center gap-2 text-xs">
       <span className="text-slate-400">Electors</span>
@@ -302,31 +367,33 @@ function Header() {
   )
   const menuItem = 'flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-sm text-slate-200 hover:bg-slate-800'
   return (
-    <header className="relative flex shrink-0 items-center gap-x-4 gap-y-2 border-b border-slate-800 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 px-4 py-2 phone:px-3 desk:flex-wrap">
+    <header className="relative flex shrink-0 items-center gap-x-4 gap-y-2 border-b border-slate-800 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 px-4 py-2 phone:gap-x-2 phone:px-3 desk:flex-wrap">
       <div className="flex min-w-0 items-center gap-2">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-rose-600"><Vote size={18} className="text-white" aria-hidden /></div>
+        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${sim.accent} phone:hidden`}><sim.icon size={18} className="text-white" aria-hidden /></div>
         <div className="min-w-0">
-          <div className="text-sm font-bold leading-tight">GE2030 Simulator</div>
-          <div className="text-[11px] leading-tight text-slate-400 phone:hidden">Singapore electoral boundaries & election night</div>
+          <div className="truncate text-sm font-bold leading-tight"><span className="phone:hidden">{sim.full}</span><span className="desk:hidden">{sim.short}</span></div>
+          <div className="text-[11px] leading-tight text-slate-400 phone:hidden">SG Simulator · {sim.sub}</div>
         </div>
       </div>
-      <div className="phone:hidden">{electorToggle}</div>
+      {election && <div className="phone:hidden">{electorToggle}</div>}
       {/* phones: the most-used buttons stay visible, the rest live in a menu */}
       <div className="ml-auto flex items-center gap-1.5 desk:hidden">
         {msg && <span className="max-w-28 truncate text-[11px] text-emerald-300">{msg}</span>}
-        <Button onClick={() => useStore.getState().showPartyInfo('PAP')} aria-label="Parties"><Landmark size={16} aria-hidden /></Button>
-        <a href={GUIDE_URL} target="_blank" rel="noopener" aria-label="Beginner guide" className="inline-flex min-h-9 items-center rounded-md border border-rose-500/70 bg-rose-600/15 px-3 text-rose-100"><BookOpen size={16} aria-hidden /></a>
+        <SimulatorPill />
+        {election && <Button onClick={() => useStore.getState().showPartyInfo('PAP')} aria-label="Parties"><Landmark size={16} aria-hidden /></Button>}
+        {election && <a href={GUIDE_URL} target="_blank" rel="noopener" aria-label="Beginner guide" className="inline-flex min-h-9 items-center rounded-md border border-rose-500/70 bg-rose-600/15 px-3 text-rose-100"><BookOpen size={16} aria-hidden /></a>}
         <Button onClick={() => setMenu(!menu)} aria-label="More" aria-expanded={menu}><Menu size={16} aria-hidden /></Button>
       </div>
       {menu && (
         <>
           <div className="fixed inset-0 z-40 desk:hidden" onClick={() => setMenu(false)} />
           <div className="absolute right-2 top-full z-50 mt-1 w-[min(20rem,calc(100vw-1rem))] rounded-xl border border-slate-700 bg-slate-900 p-2 shadow-2xl desk:hidden" role="menu">
-            <div className="px-1 pb-2 pt-1">{electorToggle}</div>
+            <SimulatorMenu onPick={() => setMenu(false)} />
+            {election && <div className="border-t border-slate-800 px-1 pb-2 pt-2">{electorToggle}</div>}
             <div className="border-t border-slate-800 pt-1" onClick={() => setMenu(false)}>
-              <button className={menuItem} onClick={share}><Share2 size={16} aria-hidden /> Share link</button>
-              <button className={menuItem} onClick={exportJson}><Download size={16} aria-hidden /> Export</button>
-              <button className={menuItem} onClick={() => fileRef.current?.click()}><Upload size={16} aria-hidden /> Import</button>
+              {election && <button className={menuItem} onClick={share}><Share2 size={16} aria-hidden /> Share link</button>}
+              {election && <button className={menuItem} onClick={exportJson}><Download size={16} aria-hidden /> Export</button>}
+              {election && <button className={menuItem} onClick={() => fileRef.current?.click()}><Upload size={16} aria-hidden /> Import</button>}
               <button className={menuItem} onClick={() => setAbout(true)}><Info size={16} aria-hidden /> About, sources & disclaimer</button>
             </div>
             <p className="border-t border-slate-800 px-3 pb-1 pt-2 text-[11px] leading-snug text-slate-500">{DISCLAIMER_SHORT}</p>
@@ -335,17 +402,38 @@ function Header() {
       )}
       <div className="ml-auto flex flex-wrap items-center gap-1.5 phone:hidden">
         {msg && <span className="text-xs text-emerald-300">{msg}</span>}
-        <Button onClick={() => useStore.getState().showPartyInfo('PAP')} title="Who are the parties? Beginner-friendly profiles"><Landmark size={14} aria-hidden /> Parties</Button>
-        <a href={GUIDE_URL} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 rounded-md border border-rose-500/70 bg-rose-600/15 px-2.5 py-1.5 text-xs font-medium text-rose-100 hover:bg-rose-600/30" title="Step-by-step beginner guide"><BookOpen size={14} aria-hidden /> Guide</a>
-        <Button onClick={share} title="Copy a link containing your map, contests and swings"><Share2 size={14} aria-hidden /> Share link</Button>
-        <Button onClick={exportJson}><Download size={14} aria-hidden /> Export</Button>
-        <Button onClick={() => fileRef.current?.click()}><Upload size={14} aria-hidden /> Import</Button>
+        {election && (
+          <>
+            <Button onClick={() => useStore.getState().showPartyInfo('PAP')} title="Who are the parties? Beginner-friendly profiles"><Landmark size={14} aria-hidden /> Parties</Button>
+            <a href={GUIDE_URL} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 rounded-md border border-rose-500/70 bg-rose-600/15 px-2.5 py-1.5 text-xs font-medium text-rose-100 hover:bg-rose-600/30" title="Step-by-step beginner guide"><BookOpen size={14} aria-hidden /> Guide</a>
+            <Button onClick={share} title="Copy a link containing your map, contests and swings"><Share2 size={14} aria-hidden /> Share link</Button>
+            <Button onClick={exportJson}><Download size={14} aria-hidden /> Export</Button>
+            <Button onClick={() => fileRef.current?.click()}><Upload size={14} aria-hidden /> Import</Button>
+          </>
+        )}
         <Button onClick={() => setAbout(true)} title="About, sources and disclaimer" aria-label="About"><Info size={14} aria-hidden /></Button>
       </div>
       {about && <About onClose={() => setAbout(false)} />}
       <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) importJson(f); e.target.value = '' }} />
       {sharing && <ShareDialog url={sharing} onClose={() => setSharing(null)} onCopied={() => flash('Link copied with disclaimer')} />}
     </header>
+  )
+}
+
+/** Phones: switch simulator from the menu too. */
+function SimulatorMenu({ onPick }: { onPick: () => void }) {
+  const app = useApp((s) => s.app)
+  const setApp = useApp((s) => s.setApp)
+  return (
+    <div className="pb-1" role="group" aria-label="Simulator">
+      {SIMULATORS.map((x) => (
+        <button key={x.id} onClick={() => { setApp(x.id); onPick() }} aria-pressed={app === x.id}
+          className={`flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left ${app === x.id ? 'bg-slate-800' : 'hover:bg-slate-800'}`}>
+          <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${x.accent}`}><x.icon size={15} className="text-white" aria-hidden /></span>
+          <span><span className="block text-sm font-medium text-slate-100">{x.full}</span><span className="block text-[11px] text-slate-400">{x.sub}</span></span>
+        </button>
+      ))}
+    </div>
   )
 }
 
@@ -397,22 +485,26 @@ function SharedNotice() {
 }
 
 function About({ onClose }: { onClose: () => void }) {
-  const ge = useStore((s) => s.data)!.ge
+  const ge = useStore((s) => s.data)?.ge
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div className="scroll-thin max-h-[85vh] max-w-xl overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 p-5 text-sm leading-relaxed" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-2 flex items-start justify-between"><h2 className="text-lg font-bold">About this simulator</h2><button onClick={onClose} className="text-slate-400 hover:text-white" aria-label="Close"><X size={18} /></button></div>
-        <p className="text-slate-300">Redraw Singapore's electoral map, choose who contests where, set the swing and watch a simulated GE2030 election night.</p>
+        <div className="mb-2 flex items-start justify-between"><h2 className="text-lg font-bold">About the SG Simulator</h2><button onClick={onClose} className="text-slate-400 hover:text-white" aria-label="Close"><X size={18} /></button></div>
+        <p className="text-slate-300">Two simulators, switched from the sidebar. In the <b>GE2030 Election Simulator</b>, redraw Singapore's electoral map, choose who contests where, set the swing and watch a simulated election night. In the <b>National Planner</b>, act as the government: build, redevelop and reclaim land to 2050 for a projected population, then read your plan as a mock White Paper.</p>
         <div className="mt-3 rounded-md border border-amber-600/60 bg-amber-950/40 p-3 text-xs leading-snug text-amber-100">
           <div className="mb-1 flex items-center gap-1.5 font-semibold"><ShieldCheck size={14} aria-hidden /> Disclaimer &amp; privacy</div>
           {DISCLAIMER_FULL}
         </div>
         <h3 className="mt-3 font-semibold">How the map is built</h3>
-        <p className="text-slate-300">The island is divided into ~700 building blocks: URA Master Plan 2019 subzones cut by the GE2025 electoral boundaries, with dense estates split further into cells of about 5,000 electors, which is close to polling-district size. Electors are placed using Census 2020 subzone populations and URA residential plot ratios. They are then scaled so that every GE2025 constituency matches the official register exactly ({ge.totalElectors.toLocaleString()} electors, 97 seats). The 2030 projection adds growth where planned housing is not yet filled (e.g. Tengah).</p>
+        <p className="text-slate-300">The island is divided into ~700 building blocks: URA Master Plan 2019 subzones cut by the GE2025 electoral boundaries, with dense estates split further into cells of about 5,000 electors, which is close to polling-district size. Electors are placed using Census 2020 subzone populations and URA residential plot ratios. They are then scaled so that every GE2025 constituency matches the official register exactly ({(ge?.totalElectors ?? 2_758_846).toLocaleString()} electors, 97 seats). The 2030 projection adds growth where planned housing is not yet filled (e.g. Tengah).</p>
         <h3 className="mt-3 font-semibold">How votes are modelled</h3>
         <p className="text-slate-300">Each block starts from its GE2025 result, tilted slightly by demographics and re-centred so every 2025 constituency reproduces its real result. New constituencies aggregate their blocks. Swings apply in this order: national, then party, then demographic (by each seat's age, ethnicity and housing mix), then local. A stronger or weaker opposition slate than 2025 moves the vote, and multi-cornered fights split it. With the GE2025 map and no swing, the model reproduces all 32 contested GE2025 results. Marine Parade–Braddell Heights was a walkover, so its notional vote (PAP ~62%) is an estimate.</p>
+        <h3 className="mt-3 font-semibold">How the National Planner works</h3>
+        <p className="text-slate-300">Singapore is divided into about 14,500 land hexagons, each about 250 m across, plus 7,300 near-shore sea hexagons that can be reclaimed. Each takes its main use from the URA Master Plan 2019. Residents come from Census 2020 subzones, scaled to SingStat's end-June 2026 figures by region and age. The population is projected to 2050 with a cohort model that starts from Population in Brief 2026. Costs, homes and jobs per hexagon are rough planning estimates, not official figures.</p>
         <h3 className="mt-3 font-semibold">Sources</h3>
         <ul className="list-disc pl-5 text-slate-300">
+          <li>NPTD and SingStat: Population in Brief 2026; Population Trends 2026; residents by planning region and age, end June (data.gov.sg)</li>
+          <li>LTA: MRT station exits (data.gov.sg)</li>
           <li>Elections Department: Electoral Boundary 2025, GE results by candidate, registered electors (data.gov.sg)</li>
           <li>Elections Department: Electoral Boundary 2006, 2011, 2015 and 2020, for the comparisons with past elections (data.gov.sg)</li>
           <li>URA: Master Plan 2019 Subzone Boundary and Land Use layer (data.gov.sg)</li>

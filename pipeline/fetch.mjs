@@ -21,6 +21,8 @@ const DATASETS = {
   'ethnic2020.csv': 'd_e7ae90176a68945837ad67892b898466', // Census 2020: subzone x ethnic group
   'results.csv': 'd_581a30bee57fa7d8383d6bc94739ad00', // ELD GE results by candidate 1955-2025
   'electors.csv': 'd_fdfb854fcb7428b29734d2e0c0674220', // ELD registered electors & rejected votes
+  'region2025.csv': 'd_3c4dc32382bdc23189428af2126dd188', // SingStat residents by planning region, age group & sex, end June (annual)
+  'mrtexits.geojson': 'd_b39d3a0871985372d7e1637193335da5', // LTA MRT station exits
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))

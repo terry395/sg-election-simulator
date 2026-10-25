@@ -33,6 +33,33 @@ An interactive web app for political enthusiasts: redraw Singapore's electoral b
 - **Works on phones:** a full-screen map with a drag-up panel and a bottom tab bar. Drawing tools float on the map, you draw with one finger and pan or zoom with two, and tapping an area shows its details.
 - Auto-draw names are always unique real place names, such as compass directions or URA neighbourhoods, never numbers.
 
+## National Planner
+
+A second simulator, opened from the left sidebar (or the header switch on phones). You act as the government and write a national land use and redevelopment plan to 2050.
+
+1. **Population**: the starting point is the latest official data (Population in Brief 2026: 6.21 million people, 3.68 million citizens, 0.55 million PRs, 1.98 million non-residents; resident TFR 0.87). A cohort-component projection to 2050 responds to fertility, immigration, non-resident growth and life expectancy settings, and shows the ageing population, the support ratio and the households that need homes.
+2. **Plan & build**: about 14,500 land hexagons (~250 m across, ~5.4 ha) built from URA Master Plan 2019 land use, plus 7,300 near-shore sea hexagons. You plan in five phases (2026–30 … 2046–50) and paint, fill or lasso around 25 land uses onto the map. These include HDB towns at three densities, ECs, condos, landed housing, mixed-use centres, commercial, business parks, industry, data centres, ports and airports, parks, nature reserves, beaches, reservoirs, agri-tech farms, schools, hospitals, eldercare, community buildings, MRT stations and utilities. The rules:
+   - Redeveloping a built-up site pays compensation and demolishes the existing homes, so residents must be rehoused.
+   - Reclamation must grow out from the coast and stay within an approximate limit of Singapore waters.
+   - Deeper water costs more and takes longer to settle.
+   - Sand caps how much can be reclaimed per phase.
+   - Nature reserves are protected.
+   - Every phase has a budget.
+
+   Ready-made big projects include Long Island, the Greater Southern Waterfront with Tuas Port, a Paya Lebar Air Base new town and a healthcare build-out.
+3. **Indicators** for each phase:
+   - homes against households
+   - parks per 1,000 residents
+   - homes near MRT, parks, schools, healthcare and community facilities
+   - school, hospital and utility capacity against demand
+   - jobs per worker and jobs outside the Central Region
+   - industrial land and spending
+
+   They roll up into a liveability score, alongside a list of plan checks.
+4. **Final report**: a mock White Paper of the plan, view-only and marked as a simulation on every page. It covers the population outlook, land budget, housing programme, reclamation, green spaces, transport and services, jobs, financing, risks, a schedule of projects and land use maps for 2026, 2050 and each phase.
+
+The planner is loaded only when it is first opened (a separate code chunk and data file), and it autosaves in the browser.
+
 ## How it was built
 
 This project was built entirely by [Claude Code](https://claude.com/claude-code), Anthropic's agentic coding tool, working from plain-English feature requests. Claude Code wrote all of the TypeScript/React app, the redistricting and election models, the Node data pipeline that turns the government datasets into the map, the unit tests, the beginner guide (including the scripts that take its screenshots and record its demo video) and this README. No part of the code was written by hand.
@@ -66,7 +93,14 @@ The processed data ships in `public/data/`. To rebuild it from source:
 npm run fetch-data   # downloads ELD / URA / SingStat datasets from data.gov.sg into pipeline/raw (~180 MB)
 npm run data         # builds public/data/*.json
 npm run data:history # builds the past-election data (GE2006-GE2025) from the boundary, result and elector files
+npm run data:planner # builds the National Planner's hexagon grid (public/data/planner.json)
 ```
+
+How the planner grid is made (`pipeline/planner.mjs`):
+1. URA Master Plan 2019 land use parcels are rasterised onto a 50 m lattice, then grouped into flat-top hexagons with rows 250 m apart. Each hexagon gets its main use, plot ratio, floor space and subzone. Residential hexagons are split into HDB, condo or landed using plot ratios and the subzone's Census dwelling mix.
+2. Census 2020 subzone residents are spread over residential floor space. Each planning region and age band is then scaled to SingStat's end-June 2026 residents by planning region and age (4,231,520, matching Population in Brief 2026).
+3. MRT stations come from LTA's station exits. Jobs are relative weights from floor space by use, calibrated in the app to the labour force.
+4. Sea hexagons up to 3 km from shore and inside an approximate limit of Singapore waters (the Johor Strait midline, and short of the Singapore Strait shipping lanes; not a legal boundary) can be reclaimed. Nature reserves and the Central Catchment are protected.
 
 How the building blocks are made (`pipeline/build.mjs`):
 1. URA Master Plan 2019 subzones are intersected with the ELD 2025 electoral boundaries.
