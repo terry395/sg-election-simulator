@@ -3,11 +3,23 @@ import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from
 import type { PlannerData } from '../data/loadPlanner'
 import { DEFAULT_POLICY, type PopulationPolicy } from '../data/demographics'
 import { PHASES, project, type PhaseId } from '../model/population'
-import { emptyPlan, simulate, type NationalPlan } from '../model/simulate'
-import { buildBlocked, hasLandBy, planIssues, reclaimBlocked, reclaimedCount } from '../model/rules'
+import { emptyPlan, simulate, type CellAction, type NationalPlan } from '../model/simulate'
+import { NOT_CONNECTED, buildBlocked, hasLandBy, planIssues, reclaimBlocked, reclaimedCount } from '../model/rules'
 import { DEFAULT_AUTO, autoPlan, fixPlan, strategyOptions, type AutoOptions, type PhaseSummary } from '../model/autoplan'
 import { PRESETS } from '../model/presets'
 import { ZONES, type Density, type ZoneId } from '../model/zones'
+
+/** what the last auto-plan or fix did */
+export interface AutoRun {
+  kind: 'auto' | 'fix'
+  summary: PhaseSummary[]
+  issuesBefore: number
+  issuesAfter: number
+  /** hexagons whose plan changed, per phase */
+  changes: number[][]
+  /** the plan before the run (undoing back to it clears the result) */
+  before: NationalPlan
+}
 
 export type PlannerTab = 'population' | 'build' | 'indicators' | 'report'
 export type PlannerTool = 'inspect' | 'paint' | 'fill' | 'lasso' | 'reclaim' | 'erase' | 'pan'
@@ -37,7 +49,11 @@ interface PlannerState {
   strategy: string
   autoOptions: AutoOptions
   /** what the last auto-plan or fix did (null = nothing to show) */
-  autoResult: { kind: 'auto' | 'fix'; summary: PhaseSummary[]; issuesBefore: number; issuesAfter: number } | null
+  autoResult: AutoRun | null
+  /** outline what the last auto-plan or fix changed, and dim everything else */
+  highlight: boolean
+  /** cells for the map to zoom to (`at` makes a repeat request distinct) */
+  focus: { cells: number[]; at: number } | null
 
   init: (d: PlannerData) => void
   setTab: (t: PlannerTab) => void
@@ -58,6 +74,8 @@ interface PlannerState {
   /** add projects that resolve the plan checks (undoable) */
   runFix: () => void
   clearAutoResult: () => void
+  setHighlight: (v: boolean) => void
+  focusOn: (cells: number[]) => void
 
   checkpoint: () => void
   /** paint the selected zone, or reclaim with the reclaim tool */
@@ -117,6 +135,8 @@ export const usePlanner = create<PlannerState>((set, get) => ({
   strategy: 'balanced',
   autoOptions: DEFAULT_AUTO,
   autoResult: null,
+  highlight: true,
+  focus: null,
 
   init: (data) => set({ data, ...loadSaved(data.n) }),
   setTab: (tab) => set({ tab }),
@@ -131,10 +151,12 @@ export const usePlanner = create<PlannerState>((set, get) => ({
   setReportOpen: (reportOpen) => set({ reportOpen }),
   clearNotice: () => set({ notice: null }),
   setStrategy: (strategy) => set((s) => ({ strategy, autoOptions: strategyOptions(strategy, s.autoOptions) })),
-  setAutoOptions: (patch) => set((s) => ({ autoOptions: { ...s.autoOptions, ...patch, sites: { ...s.autoOptions.sites, ...patch.sites } } })),
+  setAutoOptions: (patch) => set((s) => ({ autoOptions: { ...s.autoOptions, ...patch, sites: { ...s.autoOptions.sites, ...patch.sites }, sea: { ...s.autoOptions.sea, ...patch.sea } } })),
   runAuto: () => runPlanner('auto'),
   runFix: () => runPlanner('fix'),
   clearAutoResult: () => set({ autoResult: null }),
+  setHighlight: (highlight) => set({ highlight }),
+  focusOn: (cells) => set({ focus: cells.length ? { cells, at: Date.now() } : null }),
 
   checkpoint: () => set((s) => ({ past: [...s.past.slice(-99), s.plan], future: [] })),
   apply: (cells) => {
@@ -169,6 +191,10 @@ export const usePlanner = create<PlannerState>((set, get) => ({
           cur[i] = { r: 1, z: zone, d: density }
           reclaimed++
           changed = true
+        } else if (why === NOT_CONNECTED) {
+          // a crossing further out can follow once the stretch nearer the shore is in
+          retry.push(i)
+          reason = why
         } else if (why) {
           rejected++
           reason = why
@@ -210,7 +236,10 @@ export const usePlanner = create<PlannerState>((set, get) => ({
   reset: () => { get().checkpoint(); set({ plan: emptyPlan(), policy: DEFAULT_POLICY, phase: 0 }) },
   undo: () => set((s) => {
     const prev = s.past.at(-1)
-    return prev ? { plan: prev, past: s.past.slice(0, -1), future: [s.plan, ...s.future] } : {}
+    if (!prev) return {}
+    // undoing the auto-plan itself: nothing left to highlight
+    const autoResult = s.autoResult && prev === s.autoResult.before ? null : s.autoResult
+    return { plan: prev, past: s.past.slice(0, -1), future: [s.plan, ...s.future], autoResult }
   }),
   redo: () => set((s) => {
     const next = s.future[0]
@@ -222,13 +251,30 @@ function runPlanner(kind: 'auto' | 'fix') {
   const s = usePlanner.getState()
   if (!s.data) return
   const projection = project(s.data.file.meta.age2026, s.data.file.meta.female2026, s.policy)
-  const issues = (plan: NationalPlan) => planIssues(simulate(s.data!, plan, projection, s.policy)).length
+  const issues = (plan: NationalPlan) => planIssues(simulate(s.data!, plan, projection, s.policy), s.data!).length
   const issuesBefore = issues(s.plan)
   const result = kind === 'auto'
     ? autoPlan(s.data, s.plan, projection, s.policy, s.autoOptions, s.phase)
     : fixPlan(s.data, s.plan, projection, s.policy)
   s.checkpoint()
-  usePlanner.setState({ plan: result.plan, autoResult: { kind, summary: result.summary, issuesBefore, issuesAfter: issues(result.plan) } })
+  const changes = planChanges(s.plan, result.plan)
+  // show the first phase that was planned, and zoom to what changed there
+  const ran = result.summary.map((x) => x.phase)
+  const phase = (ran.includes(s.phase) ? s.phase : ran.find((p) => changes[p].length) ?? s.phase) as PhaseId
+  usePlanner.setState({
+    plan: result.plan, phase, highlight: true,
+    autoResult: { kind, summary: result.summary, issuesBefore, issuesAfter: issues(result.plan), changes, before: s.plan },
+    focus: changes[phase].length ? { cells: changes[phase], at: Date.now() } : null,
+  })
+}
+
+/** hexagons whose plan differs, per phase */
+export function planChanges(a: NationalPlan, b: NationalPlan): number[][] {
+  const same = (x?: CellAction, y?: CellAction) => (x?.r ?? 0) === (y?.r ?? 0) && x?.z === y?.z && (x?.d ?? 1) === (y?.d ?? 1)
+  return b.map((p, k) => {
+    const cells = new Set([...Object.keys(a[k]), ...Object.keys(p)].map(Number))
+    return [...cells].filter((i) => !same(a[k][i], p[i]))
+  })
 }
 
 if (import.meta.env.DEV) (window as unknown as { __planner: typeof usePlanner }).__planner = usePlanner

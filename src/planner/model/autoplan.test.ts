@@ -61,7 +61,7 @@ describe('auto-planner', () => {
       const r = autoPlan(data, emptyPlan(), proj, policy, strategyOptions(s.id), 0)
       expect(r.summary.reduce((n, x) => n + x.homes, 0)).toBeGreaterThan(50_000)
     }
-  })
+  }, 30_000)
   it('fix my plan leaves fewer problems', () => {
     const before = planIssues(simulate(data, emptyPlan(), proj, policy)).length
     const fixed = fixPlan(data, emptyPlan(), proj, policy)

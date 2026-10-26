@@ -6,9 +6,10 @@ import { usePlannerDerived } from '../state/derived'
 import { BASELINE, SOURCES } from '../data/demographics'
 import { PLANNER_REGIONS, type PlannerData } from '../data/loadPlanner'
 import { PHASES } from '../model/population'
-import { buildPlanReport, projectLabel, type PlanReport } from '../model/report'
+import { buildPlanReport, linkWords, listWords, projectLabel, type PlanReport } from '../model/report'
+import type { IslandLink } from '../model/islands'
 import { ACQUIRE_PER_HOME, SAND_CAP, type Snapshot, type SpendKind } from '../model/simulate'
-import { CELL_HA, ZONE } from '../model/zones'
+import { CELL_HA, ZONE, isCrossing } from '../model/zones'
 import { PHASE_COLORS } from '../map/colors'
 import { HexCanvas } from './HexCanvas'
 import { scoreWord } from '../panels/format'
@@ -19,6 +20,7 @@ const DISCLAIMER = 'This is a mock plan written automatically by the SG Simulato
 const PAGES = [
   { id: 'plan-cover', label: 'Cover' },
   { id: 'plan-foreword', label: 'Foreword' },
+  { id: 'plan-islands', label: 'One Singapore: joining the islands' },
   { id: 'plan-summary', label: 'Summary' },
   { id: 'plan-population', label: 'Population' },
   { id: 'plan-land', label: 'Land use' },
@@ -72,7 +74,7 @@ function ReportDialog() {
         <select onChange={(e) => goTo(e.target.value)} defaultValue="" aria-label="Jump to a page"
           className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-200 phone:max-w-32">
           <option value="" disabled>Jump to…</option>
-          {PAGES.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+          {PAGES.filter((p) => p.id !== 'plan-islands' || report.islandLinks.length).map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
         </select>
         <button onClick={close} className="p-1 text-slate-400 hover:text-white" aria-label="Close report"><X size={20} /></button>
       </div>
@@ -128,6 +130,11 @@ function Document({ r, data }: { r: PlanReport; data: PlannerData }) {
             <h1 className="mx-auto mt-3 max-w-lg text-[32px] font-bold leading-tight tracking-wide phone:text-[22px]">{r.name.toUpperCase()}</h1>
             <div className="mx-auto my-8 h-px w-24 bg-black" />
             <p className="text-[15px] italic">A liveable and sustainable home for {m(p50.total, 1)} people</p>
+            {r.islandLinks.length > 0 && (
+              <p className="mx-auto mt-10 max-w-md border-2 border-black px-4 py-2.5 text-[13px] font-bold leading-snug tracking-wide">
+                FEATURING · {listWords(r.islandLinks.map((l) => l.island.name)).toUpperCase()} JOINED TO THE MAIN ISLAND
+              </p>
+            )}
           </div>
           <div className="mt-auto space-y-6 pb-4">
             <p className="text-[13px] tracking-wider">[ SIMULATED PAPER · NOT PRESENTED TO PARLIAMENT ]</p>
@@ -149,6 +156,42 @@ function Document({ r, data }: { r: PlanReport; data: PlannerData }) {
         <div className="mt-12 w-64 border-t border-dotted border-black pt-1 text-[13px]">Minister for National Development<br />(the player of this simulation)</div>
         <p className="mt-4 text-[13px]">{dateText}</p>
       </Page>
+
+      {/* ---------------------------------------------------------------- special feature: islands joined */}
+      {r.islandLinks.length > 0 && (
+        <Page id="plan-islands" n={next()}>
+          <div className="text-center text-[12px] font-bold tracking-[0.3em]">SPECIAL FEATURE</div>
+          <h2 className="ebrc-title mt-2">ONE SINGAPORE: JOINING THE ISLANDS</h2>
+          <p className="mx-auto mt-3 max-w-xl text-center text-[15px] italic">
+            {listWords(r.islandLinks.map((l) => l.island.name))} {r.islandLinks.length > 1 ? 'become' : 'becomes'} part of the main island, reached by road for the first time.
+          </p>
+          {r.islandLinks.map((l) => (
+            <div key={l.island.name} className="mt-6 border-2 border-black">
+              <div className="flex flex-wrap items-baseline justify-between gap-2 border-b-2 border-black bg-black px-3 py-1.5 text-white">
+                <span className="text-[16px] font-bold tracking-wide">{l.island.name.toUpperCase()}</span>
+                <span className="text-[12px]">{l.joinedPhase !== null ? `Joined by ${PHASES[l.joinedPhase].end}` : 'Joined after 2050'} · by {linkWords(l)}</span>
+              </div>
+              <IslandMap data={data} link={l} />
+              <div className="grid grid-cols-4 gap-px border-t-2 border-black bg-black text-center phone:grid-cols-2">
+                <Fact label="Joined" value={l.joinedPhase !== null ? String(PHASES[l.joinedPhase].end) : 'after 2050'} />
+                <Fact label="Across the sea" value={`${l.km.toFixed(2)} km`} />
+                <Fact label="Cost of the link" value={`S$${int(l.cost)}m`} />
+                <Fact label="Homes on the island, 2050" value={int(l.homes)} />
+              </div>
+            </div>
+          ))}
+          <IslandKey />
+          <ol className="ebrc-paras mt-4">
+            {r.islandLinks.map((l) => P(<>
+              {l.island.name} ({ha(l.island.cells.length * CELL_HA)} today) {l.joinedPhase !== null ? <>is joined to the main island in {PHASES[l.joinedPhase].label} by {linkWords(l)}</> : <>will be joined to the main island by {linkWords(l)} once the reclaimed land has settled, after 2050</>}, spanning about {l.km.toFixed(2)} km of sea at a cost of about S${int(l.cost)} million.
+              {' '}{l.areaHa > l.island.cells.length * CELL_HA ? `With the new land around it, the island covers ${ha(l.areaHa)}` : `The island covers ${ha(l.areaHa)}`}{l.homes > 0 ? ` and holds ${int(l.homes)} homes in 2050.` : ' and has no homes in 2050.'}
+            </>, l.island.name))}
+            {P(<>A fixed link lets people, goods, buses and emergency services reach the island at any hour without a ferry. The island's land can then be planned as part of the main island: for homes and jobs, or kept for nature and recreation with easy access.</>)}
+            {r.islandLinks.some((l) => l.kinds.includes('land')) && P(<>Joining islands with reclaimed land closes the channel between them. Tidal flows, mangroves, seagrass and coral in the channel would need to be studied, and culverts or a short bridge kept where water must still flow.</>)}
+            {P(<>Links across the water must leave room for shipping and be built above future sea levels. Their costs are shown in Annex A.</>)}
+          </ol>
+        </Page>
+      )}
 
       {/* ---------------------------------------------------------------- 1 summary */}
       <Page id="plan-summary" n={next()}>
@@ -270,6 +313,7 @@ function Document({ r, data }: { r: PlanReport; data: PlannerData }) {
         <ol className="ebrc-paras">
           {P(<>Parks, nature reserves and beaches cover {ha(last.greenHa)} in 2050 ({r.greenChange >= 0 ? '+' : '−'}{ha(Math.abs(r.greenChange))} on today). That is {last.greenPer1000.toFixed(2)} ha for every 1,000 residents, against a target of 0.8 ha. {r.natureAdded > 0 ? `${ha(r.natureAdded)} of new nature reserves are gazetted.` : r.natureAdded < 0 ? `${ha(-r.natureAdded)} of nature reserve land is lost.` : ''} {pc(last.reach.park)} of homes are within 500 m of a park.</>)}
           {P(<>The plan {r.stationsAdded > 0 ? `adds ${r.stationsAdded} MRT station sites` : 'adds no MRT stations'}. {pc(last.reach.station)} of homes are within 1 km of a station in 2050, against {pc(first.reach.station)} today.</>)}
+          {r.links.length > 0 && P(<>New roads and fixed links: {listWords(r.links.map((l) => `${l.zone === 'highway' ? 'expressways' : `${ZONE[l.zone].label.toLowerCase()}s`} of about ${(l.cells * 0.25).toFixed(1)} km (${listWords(l.areas.slice(0, 3))}${l.areas.length > 3 ? ' and elsewhere' : ''})`))}, costing about S${(r.links.reduce((n, l) => n + l.cost, 0) / 1000).toFixed(1)} billion in all.</>)}
           {P(<>School places compared with children score {last.schoolIndex.toFixed(2)} against 1.00 today. {last.schoolIndex >= 1 ? 'Falling numbers of children free up places, and some schools can be merged or reused.' : 'More schools are needed.'}</>)}
           {P(<>Hospitals and eldercare compared with an ageing population score {last.healthIndex.toFixed(2)} against 1.00 today. {last.healthIndex >= 1 ? 'Capacity keeps pace with the growing number of seniors.' : 'Capacity does not keep pace with the growing number of seniors, and hospitals would be crowded.'}</>)}
           {P(<>Utilities (power, NEWater, desalination and waste-to-energy) score {last.utilityIndex.toFixed(2)} against population growth.</>)}
@@ -417,6 +461,54 @@ function PhaseKey() {
     <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px]">
       {PHASES.map((p) => <span key={p.id} className="inline-flex items-center gap-1.5"><span className="inline-block h-3 w-4 border border-black" style={{ background: PHASE_COLORS[p.id] }} />{p.label}</span>)}
       <span className="inline-flex items-center gap-1.5"><span className="inline-block h-3 w-4 border border-black bg-[#e5e7eb]" />Unchanged</span>
+    </div>
+  )
+}
+
+const ISLAND = { old: '#d1d5db', island: '#15803d', newLand: '#e7d7b0', link: '#dc2626', sea: '#dbeafe' }
+
+/** A close-up of one island, the new land around it and the link to the main island. */
+function IslandMap({ data, link }: { data: PlannerData; link: IslandLink }) {
+  const { sim } = usePlannerDerived()
+  const fill = useMemo(() => {
+    const isle = new Set(link.island.cells)
+    const path = new Set(link.cells)
+    const last = sim.snaps[sim.snaps.length - 1]
+    // frame the island and the link with about 1.5 km of sea around them
+    let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity
+    for (const i of [...link.island.cells, ...link.cells]) {
+      const [x, y] = data.center[i]
+      w = Math.min(w, x); e = Math.max(e, x); s = Math.min(s, y); n = Math.max(n, y)
+    }
+    const pad = 0.014
+    return data.center.map(([x, y], i) => {
+      if (x < w - pad || x > e + pad || y < s - pad || y > n + pad) return null
+      const z = last.zone[i]
+      if (path.has(i)) return isCrossing(z) ? ZONE[z!].color : ISLAND.link
+      if (isle.has(i)) return ISLAND.island
+      if (data.land[i]) return ISLAND.old
+      if (sim.timelines[i].landReady !== Infinity) return ISLAND.newLand
+      if (isCrossing(z)) return ZONE[z!].color
+      return ISLAND.sea
+    })
+  }, [data, link, sim])
+  return <HexCanvas data={data} fill={fill} height={420} maxHeight={420} title={`Map of ${link.island.name} and its link to the main island`} />
+}
+
+function IslandKey() {
+  const items: [string, string][] = [[ISLAND.island, 'Island today'], [ISLAND.old, 'Other land today'], [ISLAND.newLand, 'New land'], [ISLAND.link, 'Land link'], [ZONE.bridge.color, 'Bridge'], [ZONE.causeway.color, 'Causeway'], [ZONE.tunnel.color, 'Undersea tunnel']]
+  return (
+    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px]">
+      {items.map(([c, label]) => <span key={label} className="inline-flex items-center gap-1.5"><span className="inline-block h-3 w-4 border border-black" style={{ background: c }} />{label}</span>)}
+    </div>
+  )
+}
+
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-white px-2 py-2">
+      <div className="text-[20px] font-bold leading-tight phone:text-[16px]">{value}</div>
+      <div className="text-[11px] uppercase tracking-wide">{label}</div>
     </div>
   )
 }

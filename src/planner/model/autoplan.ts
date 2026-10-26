@@ -1,9 +1,10 @@
-import type { PlannerData } from '../data/loadPlanner'
+import { PLANNER_REGIONS, type PlannerData, type PlannerRegion } from '../data/loadPlanner'
 import type { PopulationPolicy } from '../data/demographics'
 import { PHASES, type YearPop } from './population'
 import { ACQUIRE_PER_HOME, ACQUIRE_SITE, SAND_CAP, cellStates, emptyPlan, reclaimCost, reclaimPhases, simulate, timelines, type NationalPlan, type Snapshot } from './simulate'
-import { buildBlocked, hasLandBy, reclaimBlocked, reclaimedCount } from './rules'
-import { AMEN, CELL_HA, ZONE, isVacant, zoneCost, zoneHomes, zoneJobs, type Density, type ZoneId } from './zones'
+import { buildBlocked, crossingBy, hasLandBy, reclaimBlocked, reclaimedCount } from './rules'
+import { baseIslands, plannedLinks, seaPath } from './islands'
+import { AMEN, CELL_HA, CROSSING_MAX_RING, ZONE, isVacant, zoneCost, zoneHomes, zoneJobs, type Density, type ZoneId } from './zones'
 
 /** What the auto-planner aims for and where it may build. */
 export interface AutoOptions {
@@ -20,6 +21,8 @@ export interface AutoOptions {
   reclaimPerPhase: number
   /** reclaim the maximum every phase, not only when the land bank runs short */
   reclaimAlways: boolean
+  /** where new land may be reclaimed, and which islands to join to the main island */
+  sea: SeaChoice
   /** spare homes above households (0.03 = 3%) */
   housingBuffer: number
   /** ha of parks and nature per 1,000 residents */
@@ -40,19 +43,31 @@ export interface AutoOptions {
   budgetUse: number
 }
 
+/**
+ * Where to reclaim. Simple picks whole coasts (planning regions), detailed picks stretches of coast
+ * (the planning area nearest the sea). Empty lists mean anywhere.
+ */
+export interface SeaChoice {
+  detail: 'simple' | 'detailed'
+  regions: PlannerRegion[]
+  areas: string[]
+  /** islands to join to the main island with new land, by name */
+  join: string[]
+}
+
 export interface Strategy { id: string; label: string; desc: string; options: Partial<AutoOptions> }
 
 export const DEFAULT_AUTO: AutoOptions = {
   phases: 'all', mode: 'add', publicShare: 0.8, density: 'auto',
   sites: { landBank: true, openSpace: false, redevelop: false, reclaim: true },
-  reclaimPerPhase: 120, reclaimAlways: false, housingBuffer: 0.03, greenTarget: 0.9, mrtTarget: 0.85,
+  reclaimPerPhase: 120, reclaimAlways: false, sea: { detail: 'simple', regions: [], areas: [], join: [] }, housingBuffer: 0.03, greenTarget: 0.9, mrtTarget: 0.85,
   serviceTarget: 1.02, careTarget: 1.03, jobsTarget: 1, decentralise: false, ageing: false, budgetUse: 0.95,
 }
 
 export const STRATEGIES: Strategy[] = [
   { id: 'balanced', label: 'Balanced growth', desc: 'Meet every need at the lowest cost: new towns on the land bank, schools, clinics and parks beside them, MRT where homes lack it, and reclamation only when land runs short.', options: {} },
   { id: 'compact', label: 'Compact city', desc: 'Grow upwards, not outwards: rebuild older low-rise estates and industry near towns at high density around MRT stations. No reclamation.', options: { density: 2, sites: { landBank: true, openSpace: false, redevelop: true, reclaim: false }, mrtTarget: 0.9 } },
-  { id: 'sea', label: 'Expand to the sea', desc: 'Reclaim large new islands off the coast every phase, put new towns on them as they settle and bank the rest for after 2050, keeping today\'s green spaces.', options: { sites: { landBank: true, openSpace: false, redevelop: false, reclaim: true }, reclaimPerPhase: 200, reclaimAlways: true } },
+  { id: 'sea', label: 'Expand to the sea', desc: 'Reclaim large new islands every phase off the coasts you choose, join offshore islands if you like, put new towns on them as they settle and bank the rest for after 2050, keeping today\'s green spaces.', options: { sites: { landBank: true, openSpace: false, redevelop: false, reclaim: true }, reclaimPerPhase: 200, reclaimAlways: true } },
   { id: 'garden', label: 'City in nature', desc: 'Parks first: 1.2 ha of green for every 1,000 residents, no building on open greenery and lower-rise homes.', options: { greenTarget: 1.2, density: 1, sites: { landBank: true, openSpace: false, redevelop: false, reclaim: true } } },
   { id: 'regions', label: 'Jobs near homes', desc: 'Regional centres and business parks outside the city, next to MRT, so fewer people commute to the CBD.', options: { decentralise: true, jobsTarget: 1.05 } },
   { id: 'ageing', label: 'Ageing-ready', desc: 'More hospitals and eldercare than demand needs, placed where seniors live, with homes close to transport.', options: { careTarget: 1.15, ageing: true, mrtTarget: 0.9 } },
@@ -60,8 +75,31 @@ export const STRATEGIES: Strategy[] = [
 
 export const strategyOptions = (id: string, base: AutoOptions = DEFAULT_AUTO): AutoOptions => {
   const s = STRATEGIES.find((x) => x.id === id)?.options ?? {}
-  return { ...DEFAULT_AUTO, phases: base.phases, mode: base.mode, ...s, sites: { ...DEFAULT_AUTO.sites, ...s.sites } }
+  return { ...DEFAULT_AUTO, phases: base.phases, mode: base.mode, sea: base.sea, ...s, sites: { ...DEFAULT_AUTO.sites, ...s.sites } }
 }
+
+/** a sea hexagon the choice allows reclaiming */
+export function seaAllowed(data: PlannerData, sea: SeaChoice, i: number) {
+  if (sea.detail === 'simple') return !sea.regions.length || sea.regions.includes(data.region[i]!)
+  return !sea.areas.length || sea.areas.includes(data.place[i].pa)
+}
+
+export interface SeaArea { region: PlannerRegion; area: string; cells: number }
+/** stretches of coast with shallow water to reclaim, by region then size */
+export function seaAreas(data: PlannerData): SeaArea[] {
+  const m = new Map<string, SeaArea>()
+  for (let i = 0; i < data.n; i++) {
+    if (data.land[i] || data.ring[i] > 8 || !data.region[i] || !data.place[i].pa) continue
+    const key = data.place[i].pa
+    const a = m.get(key) ?? { region: data.region[i]!, area: key, cells: 0 }
+    a.cells++
+    m.set(key, a)
+  }
+  return [...m.values()].filter((a) => a.cells >= 10).sort((a, b) => PLANNER_REGIONS.indexOf(a.region) - PLANNER_REGIONS.indexOf(b.region) || b.cells - a.cells)
+}
+
+/** offshore islands the planner can join to the main island */
+export const joinableIslands = (data: PlannerData) => baseIslands(data).islands.filter((s) => !s.prelinked && s.cells.length >= 15)
 
 export interface PhaseSummary {
   phase: number
@@ -190,6 +228,25 @@ function planPhase(data: PlannerData, plan: NationalPlan, projection: YearPop[],
   const nearHomes = (i: number) => (dHomes[i] >= 0 ? 1 - dHomes[i] / (HOME_RINGS + 1) : 0)
   const pop = s.pop
 
+  // ---- 0. join the chosen islands to the main island with new land (an explicit choice: it comes first)
+  if (opts.sites.reclaim && opts.sea.join.length) {
+    const linked = plannedLinks(data, plan, p)
+    let used = reclaimedCount(plan, p)
+    for (const island of baseIslands(data).islands) {
+      if (!opts.sea.join.includes(island.name) || island.cells.some((i) => linked[i] >= 0)) continue
+      // the shortest strip of sea between them, grown out from the island
+      const path = seaPath(data, island.cells, (i) => linked[i] >= 0, (i) => !hasLandBy(data, plan, i, p))
+      if (!path.length) continue
+      const cost = path.reduce((n, i) => n + reclaimCost(data.ring[i]), 0)
+      if (used + path.length > SAND_CAP) { out.unmet.push(`${label}: not enough sand left to join ${island.name}`); continue }
+      if (spent + cost > budget) { out.unmet.push(`${label}: not enough budget to join ${island.name} (about S$${(cost / 1000).toFixed(1)}b)`); continue }
+      for (const i of path) plan[p][i] = { ...plan[p][i], r: 1 }
+      spent += cost
+      used += path.length
+      out.added.reclaim = (out.added.reclaim ?? 0) + path.length
+    }
+  }
+
   // ---- 1. essentials: hospitals & eldercare, utilities
   const care = (q: YearPop) => q.residents + 2 * q.bands[3]
   let health = 0, utility = 0, schools = 0
@@ -278,6 +335,26 @@ function planPhase(data: PlannerData, plan: NationalPlan, projection: YearPop[],
     }
   }
   if (needHomes > 0) out.unmet.push(`${label}: about ${k(needHomes)} homes short (${broke ? 'budget ran out' : 'no free sites left'})`)
+
+  // ---- 2b. new homes on land cut off from the main island get a causeway, bridge or tunnel
+  if (newHousing.length) {
+    const linked = plannedLinks(data, plan, p)
+    const seen = new Uint8Array(data.n)
+    for (const h of newHousing) {
+      if (linked[h] >= 0 || seen[h]) continue
+      // the land the homes stand on
+      const comp = [h]
+      seen[h] = 1
+      for (let c = 0; c < comp.length; c++) for (const j of data.neighbours[comp[c]]) if (!seen[j] && (hasLandBy(data, plan, j, p) || crossingBy(plan, j, p))) { seen[j] = 1; comp.push(j) }
+      const path = seaPath(data, comp, (i) => linked[i] >= 0, (i) => !hasLandBy(data, plan, i, p) && !crossingBy(plan, i, p))
+      let ok = path.length > 0
+      for (const i of path) {
+        const z: ZoneId = data.ring[i] <= CROSSING_MAX_RING.causeway! ? 'causeway' : data.ring[i] <= CROSSING_MAX_RING.bridge! ? 'bridge' : 'tunnel'
+        if (!place(i, z)) { ok = false; break }
+      }
+      if (!ok) out.unmet.push(`${label}: new homes on an island with no link to the main island`)
+    }
+  }
 
   // ---- 3. schools, community and parks within reach of the new homes
   const local: [ZoneId, number, number][] = [['school', AMEN.school, 4], ['community', AMEN.community, 4], ['park', AMEN.park, 2]]
@@ -368,14 +445,14 @@ function planPhase(data: PlannerData, plan: NationalPlan, projection: YearPop[],
     const seaHomes = distances(data, (i) => homes[i] > 0, 8)
     // sea next to the coast (or to land already being reclaimed)
     const edge = new Set<number>()
-    // only water shallow enough to be built on before the last phase
-    const usable = (i: number) => p + reclaimPhases(data.ring[i]) - 1 <= 3
+    // only water shallow enough to be built on before the last phase, off the coasts chosen
+    const usable = (i: number) => p + reclaimPhases(data.ring[i]) - 1 <= 3 && seaAllowed(data, opts.sea, i) && !crossingBy(plan, i, p)
     for (let i = 0; i < data.n; i++) if (!data.land[i] && usable(i) && !hasLandBy(data, plan, i, p) && !reclaimBlocked(data, plan, i, p, 0)) edge.add(i)
     while (done < want) {
       // grow out from the shore, shallow water first, near where people live
       // compact islands rather than thin strips: favour water surrounded by new land
       const pick = best((i) => -data.ring[i] * 0.7 + (seaHomes[i] >= 0 ? 8 - seaHomes[i] : -4) + data.neighbours[i].filter((j) => plan[p][j]?.r || hasLandBy(data, plan, j, p - 1)).length * 3, edge)
-      if (!pick) break
+      if (!pick) { if (opts.reclaimAlways && done < want * 0.8) out.unmet.push(`${label}: only ${done} of ${want} hexagons reclaimed (no more shallow water off the coasts chosen)`); break }
       const bi = pick.i
       edge.delete(bi)
       const c = reclaimCost(data.ring[bi])

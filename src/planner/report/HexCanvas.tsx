@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import type { PlannerData } from '../data/loadPlanner'
 
 /** A static picture of the hexagon map (for the report), drawn on a canvas. */
-export function HexCanvas({ data, fill, title, height = 460 }: { data: PlannerData; fill: (string | null)[]; title: string; height?: number }) {
+export function HexCanvas({ data, fill, title, height = 460, maxHeight }: { data: PlannerData; fill: (string | null)[]; title: string; height?: number; maxHeight?: number }) {
   const ref = useRef<HTMLCanvasElement>(null)
   // frame the drawn hexagons
   const bounds = useMemo(() => {
@@ -47,5 +47,6 @@ export function HexCanvas({ data, fill, title, height = 460 }: { data: PlannerDa
     }
   }, [data, fill, bounds, width, height])
 
-  return <canvas ref={ref} role="img" aria-label={title} className="block h-auto w-full" style={{ aspectRatio: `${width} / ${height}` }} />
+  // a tall picture is kept to maxHeight by narrowing it
+  return <canvas ref={ref} role="img" aria-label={title} className="mx-auto block h-auto w-full" style={{ aspectRatio: `${width} / ${height}`, maxWidth: maxHeight ? (maxHeight * width) / height : undefined }} />
 }

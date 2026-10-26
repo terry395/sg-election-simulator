@@ -24,7 +24,7 @@ export function PlannerDerivedProvider({ children }: { children: ReactNode }) {
   const phase = usePlanner((s) => s.phase)
   const projection = useMemo(() => project(data.file.meta.age2026, data.file.meta.female2026, policy), [data, policy])
   const sim = useMemo(() => simulate(data, plan, projection, policy), [data, plan, projection, policy])
-  const issues = useMemo(() => planIssues(sim), [sim])
+  const issues = useMemo(() => planIssues(sim, data), [sim, data])
   const value = useMemo(() => ({ projection, sim, issues, snap: sim.snaps[phase + 1], today: sim.snaps[0] }), [projection, sim, issues, phase])
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

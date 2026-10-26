@@ -9,6 +9,7 @@ export type ZoneId =
   | 'park' | 'nature' | 'open' | 'beach' | 'water' | 'sports' | 'farm'
   | 'school' | 'health' | 'eldercare' | 'community'
   | 'mrt' | 'utility' | 'transport' | 'road' | 'special' | 'cemetery' | 'reserve'
+  | 'highway' | 'bridge' | 'causeway' | 'tunnel'
 
 export type ZoneGroup = 'Housing' | 'Economy' | 'Green & blue' | 'Community' | 'Infrastructure' | 'Other'
 export const GROUPS: ZoneGroup[] = ['Housing', 'Economy', 'Green & blue', 'Community', 'Infrastructure', 'Other']
@@ -74,6 +75,12 @@ export const ZONES: Zone[] = [
   { id: 'special', label: 'Special use (defence)', group: 'Other', color: '#57534e', buildable: true, jobs: 100, cost: 50, years: 5, desc: 'Military camps and training areas.' },
   { id: 'cemetery', label: 'Cemetery', group: 'Other', color: '#a8a29e', buildable: false, cost: 0, years: 0, desc: 'Burial grounds and columbaria.' },
   { id: 'reserve', label: 'Cleared site (land bank)', group: 'Other', color: '#d6d3d1', buildable: true, cost: 5, years: 0, desc: 'Vacant state land held for the future. Clearing a built site makes one.' },
+
+  // fixed links (kept at the end: saved plans store zones by index)
+  { id: 'highway', label: 'Expressway', group: 'Infrastructure', color: '#525252', buildable: true, jobs: 10, cost: 150, years: 5, desc: 'A new expressway or major road on land, like the North-South Corridor.' },
+  { id: 'bridge', label: 'Bridge', group: 'Infrastructure', color: '#f43f5e', buildable: true, cost: 400, years: 5, desc: 'A road and rail bridge over the sea, up to 2.5 km from shore. Build it out from the coast to link an island.' },
+  { id: 'causeway', label: 'Causeway', group: 'Infrastructure', color: '#a16207', buildable: true, cost: 120, years: 5, desc: 'A low embankment carrying a road across shallow water (within 750 m of shore), like the Jurong Island Causeway.' },
+  { id: 'tunnel', label: 'Undersea tunnel', group: 'Infrastructure', color: '#7e22ce', buildable: true, cost: 900, years: 10, desc: 'A road or rail tunnel under the sea at any depth. Costly, but it keeps shipping lanes clear.' },
 ]
 
 export const ZONE: Record<ZoneId, Zone> = Object.fromEntries(ZONES.map((z) => [z.id, z])) as Record<ZoneId, Zone>
@@ -92,6 +99,10 @@ export const zoneCost = (z: ZoneId, d: Density = 1) => ZONE[z].cost * (ZONE[z].d
 export const isHousing = (z: ZoneId) => (ZONE[z].homes ?? 0) > 0
 export const isGreen = (z: ZoneId) => !!ZONE[z].green
 export const isIndustry = (z: ZoneId) => z === 'industrial' || z === 'bizpark' || z === 'port' || z === 'datacentre'
+/** fixed links that cross the sea without making land */
+export const isCrossing = (z: ZoneId | null | undefined) => z === 'bridge' || z === 'causeway' || z === 'tunnel'
+/** deepest sea ring (250 m each) a crossing can be built in */
+export const CROSSING_MAX_RING: Partial<Record<ZoneId, number>> = { bridge: 10, causeway: 3, tunnel: 99 }
 /** land with nothing to demolish */
 export const isVacant = (z: ZoneId) => z === 'reserve' || z === 'open'
 

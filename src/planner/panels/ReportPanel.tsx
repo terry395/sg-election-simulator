@@ -1,8 +1,12 @@
-import { ScrollText } from 'lucide-react'
+import { useMemo } from 'react'
+import { Link2, ScrollText } from 'lucide-react'
 import { Section, Stat } from '../../components/ui'
 import { usePlanner } from '../state/planner'
 import { usePlannerDerived } from '../state/derived'
 import { CELL_HA } from '../model/zones'
+import { islandLinks } from '../model/islands'
+import { linkWords } from '../model/report'
+import { PHASES } from '../model/population'
 import { millions, scoreWord, sgd, thousands } from './format'
 
 export function ReportPanel() {
@@ -10,7 +14,9 @@ export function ReportPanel() {
   const setName = usePlanner((s) => s.setName)
   const setReportOpen = usePlanner((s) => s.setReportOpen)
   const plan = usePlanner((s) => s.plan)
+  const data = usePlanner((s) => s.data)!
   const { sim, issues } = usePlannerDerived()
+  const joined = useMemo(() => islandLinks(data, sim).links, [data, sim])
   const first = sim.snaps[0], last = sim.snaps[sim.snaps.length - 1]
   const decisions = plan.reduce((n, p) => n + Object.keys(p).length, 0)
   const spend = sim.snaps.reduce((s, x) => s + x.spend, 0)
@@ -30,6 +36,15 @@ export function ReportPanel() {
           <Stat label="Liveability 2050" value={last.score} sub={`${scoreWord(last.score)} · today ${first.score}`} />
           <Stat label="Plan checks" value={issues.length} sub={`${issues.filter((i) => i.level === 'error').length} serious`} />
         </div>
+        {joined.length > 0 && (
+          <div className="mt-2 rounded-md border border-amber-400/50 bg-amber-400/10 p-2.5">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-100"><Link2 size={14} aria-hidden /> Islands joined to the main island</div>
+            <ul className="mt-1 space-y-0.5 text-[11px] text-slate-300">
+              {joined.map((l) => <li key={l.island.name}><b className="text-slate-100">{l.island.name}</b>, by {linkWords(l)} ({l.joinedPhase !== null ? PHASES[l.joinedPhase].end : 'after 2050'})</li>)}
+            </ul>
+            <p className="mt-1 text-[10px] text-slate-400">The White Paper opens with this as its special feature.</p>
+          </div>
+        )}
       </Section>
       <Section title="Mock White Paper">
         <p className="text-[11px] leading-snug text-slate-400">The report sets out your plan the way a government land use plan would: population outlook, land budget, housing programme, new land, green spaces, transport, jobs, financing, risks, a schedule of every project and before-and-after maps. It is a simulation, not an official document.</p>

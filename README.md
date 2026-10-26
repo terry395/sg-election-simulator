@@ -38,7 +38,7 @@ An interactive web app for political enthusiasts: redraw Singapore's electoral b
 A second simulator, opened from the left sidebar (or the header switch on phones). You act as the government and write a national land use and redevelopment plan to 2050.
 
 1. **Population**: the starting point is the latest official data (Population in Brief 2026: 6.21 million people, 3.68 million citizens, 0.55 million PRs, 1.98 million non-residents; resident TFR 0.87). A cohort-component projection to 2050 responds to fertility, immigration, non-resident growth and life expectancy settings, and shows the ageing population, the support ratio and the households that need homes.
-2. **Plan & build**: about 14,500 land hexagons (~250 m across, ~5.4 ha) built from URA Master Plan 2019 land use, plus 7,300 near-shore sea hexagons. You plan in five phases (2026–30 … 2046–50) and paint, fill or lasso around 25 land uses onto the map. These include HDB towns at three densities, ECs, condos, landed housing, mixed-use centres, commercial, business parks, industry, data centres, ports and airports, parks, nature reserves, beaches, reservoirs, agri-tech farms, schools, hospitals, eldercare, community buildings, MRT stations and utilities. The rules:
+2. **Plan & build**: about 14,500 land hexagons (~250 m across, ~5.4 ha) built from URA Master Plan 2019 land use, plus 7,300 near-shore sea hexagons. You plan in five phases (2026–30 … 2046–50) and paint, fill or lasso around 25 land uses onto the map. These include HDB towns at three densities, ECs, condos, landed housing, mixed-use centres, commercial, business parks, industry, data centres, ports and airports, parks, nature reserves, beaches, reservoirs, agri-tech farms, schools, hospitals, eldercare, community buildings, MRT stations and utilities, plus expressways, bridges, causeways and undersea tunnels that link islands across the sea. The rules:
    - Redeveloping a built-up site pays compensation and demolishes the existing homes, so residents must be rehoused.
    - Reclamation must grow out from the coast and stay within an approximate limit of Singapore waters.
    - Deeper water costs more and takes longer to settle.
@@ -51,7 +51,7 @@ A second simulator, opened from the left sidebar (or the header switch on phones
    **Auto-plan** builds the whole plan for you instead of painting hexagons by hand. Pick a strategy:
    - Balanced growth
    - Compact city: redevelop older estates at high density around MRT, with no reclamation
-   - Expand to the sea: new islands with towns on them
+   - Expand to the sea: new islands with towns on them, off the coasts you choose, either simply (by coast) or in detail (by planning area). It can also join offshore islands such as Pulau Ubin and Pulau Tekong to the main island with new land
    - City in nature: more parks, lower-rise homes
    - Jobs near homes: regional centres outside the city
    - Ageing-ready: extra hospitals and eldercare where seniors live
@@ -64,7 +64,7 @@ A second simulator, opened from the left sidebar (or the header switch on phones
    5. It adds MRT stations where the most homes are out of reach, then jobs.
    6. It reclaims land for later phases.
 
-   It stops when the phase's budget runs out and reports any needs left unmet. **Fix my plan** uses the same engine to add the cheapest projects that clear the plan checks. Both are undoable.
+   It stops when the phase's budget runs out and reports any needs left unmet. New towns on islands with no link get a causeway, bridge or tunnel. After a run, the map outlines every hexagon it changed in the phase being viewed and fades the rest: yellow is ready by the end of the phase, pink is still being built. A **Where it was built** list groups the changes by area, and clicking one zooms to it. **Fix my plan** uses the same engine to add the cheapest projects that clear the plan checks. Both are undoable.
 3. **Indicators** for each phase:
    - homes against households
    - parks per 1,000 residents
@@ -74,7 +74,7 @@ A second simulator, opened from the left sidebar (or the header switch on phones
    - industrial land and spending
 
    They roll up into a liveability score, alongside a list of plan checks.
-4. **Final report**: a mock White Paper of the plan, view-only and marked as a simulation on every page. It covers the population outlook, land budget, housing programme, reclamation, green spaces, transport and services, jobs, financing, risks, a schedule of projects and land use maps for 2026, 2050 and each phase.
+4. **Final report**: a mock White Paper of the plan, view-only and marked as a simulation on every page. When the plan joins an offshore island to the main island by new land or a fixed link, that becomes the centrepiece: it is named on the cover and gets a special feature page with a close-up map, the date, length and cost of the link. It covers the population outlook, land budget, housing programme, reclamation, green spaces, transport and services, jobs, financing, risks, a schedule of projects and land use maps for 2026, 2050 and each phase.
 
 The planner is loaded only when it is first opened (a separate code chunk and data file), and it autosaves in the browser.
 

@@ -2,7 +2,7 @@ import type { PlannerData, PlannerRegion } from '../data/loadPlanner'
 import { PLANNER_REGIONS } from '../data/loadPlanner'
 import { BASE_YEAR, type PopulationPolicy } from '../data/demographics'
 import { atYear, PHASES, type PhaseId, type YearPop } from './population'
-import { AMEN, CELL_HA, ZONE, isGreen, isIndustry, isVacant, zoneCost, zoneHomes, zoneJobs, type Density, type ZoneId } from './zones'
+import { AMEN, CELL_HA, ZONE, isCrossing, isGreen, isIndustry, isVacant, zoneCost, zoneHomes, zoneJobs, type Density, type ZoneId } from './zones'
 
 /** what the plan does to one hexagon in one phase: reclaim it, build on it, or both */
 export interface CellAction { r?: 1; z?: ZoneId; d?: Density }
@@ -66,6 +66,8 @@ export interface Snapshot {
   farmHa: number
   waterHa: number
   stations: number
+  /** bridge, causeway and tunnel hexagons over the sea (in use or being built) */
+  crossings: number
   byZone: Partial<Record<ZoneId, number>>
   byRegion: Record<PlannerRegion, { homes: number; residents: number; jobs: number }>
   spend: number
@@ -104,7 +106,8 @@ export function timelines(data: PlannerData, plan: NationalPlan): CellTimeline[]
         landReady = p + reclaimPhases(data.ring[i]) - 1
       }
       if (a.z) {
-        const start = Math.max(p, landReady + 1)
+        // bridges, causeways and tunnels cross open water: they need no land
+        const start = isCrossing(a.z) && landReady === Infinity ? p : Math.max(p, landReady + 1)
         const years = ZONE[a.z].years
         builds.push({ phase: p as PhaseId, zone: a.z, density: a.d ?? 1, start, done: start + Math.max(0, Math.ceil(years / 5) - 1), cancelledAt: Infinity })
       }
@@ -112,7 +115,7 @@ export function timelines(data: PlannerData, plan: NationalPlan): CellTimeline[]
     // a later decision that starts before an earlier one is finished replaces it
     for (let k = 0; k + 1 < builds.length; k++) if (builds[k + 1].start <= builds[k].done) builds[k].cancelledAt = builds[k + 1].phase
     // nothing can be built on land that never appears
-    if (landReady === Infinity) for (const b of builds) b.cancelledAt = -1
+    if (landReady === Infinity) for (const b of builds) if (!isCrossing(b.zone)) b.cancelledAt = -1
     out.push({ landReady, reclaimPhase, builds })
   }
   return out
@@ -210,9 +213,12 @@ export function simulate(data: PlannerData, plan: NationalPlan, projection: Year
     const byZone: Partial<Record<ZoneId, number>> = {}
     const byRegion = Object.fromEntries(PLANNER_REGIONS.map((r) => [r, { homes: 0, residents: 0, jobs: 0 }])) as Snapshot['byRegion']
     let jobsTotal = 0, jobsCentral = 0
+    let crossings = 0
     for (let i = 0; i < data.n; i++) {
       const z = zone[i]
       if (!z) continue
+      // a bridge or tunnel over open water is not land
+      if (isCrossing(z) && !(tl[i].landReady <= q)) { crossings++; continue }
       landCells++
       byZone[z] = (byZone[z] ?? 0) + 1
       if (status[i] === 0) {
@@ -273,7 +279,7 @@ export function simulate(data: PlannerData, plan: NationalPlan, projection: Year
       industryHa: industryCells * CELL_HA, industryShare: industryCells / Math.max(1, landCells),
       jobsTotal, jobsRatio, jobsOutsideCentral: 1 - jobsCentral / Math.max(1, jobsTotal),
       reach, schoolIndex, healthIndex, utilityIndex,
-      farmHa: farm * CELL_HA, waterHa: water * CELL_HA, stations, byZone, byRegion,
+      farmHa: farm * CELL_HA, waterHa: water * CELL_HA, stations, crossings, byZone, byRegion,
       spend, spendBy: q < 0 ? {} : spendBy[q], budget,
       homesDemolished: q < 0 ? 0 : demolished[q], homesCompleted: q < 0 ? 0 : completed[q],
       reclaimedThisPhase: q < 0 ? 0 : reclaimedIn[q],

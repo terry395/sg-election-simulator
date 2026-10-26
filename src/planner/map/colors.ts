@@ -1,6 +1,6 @@
 import { mix, ramp, SEQ } from '../../lib/color'
 import type { PlannerData } from '../data/loadPlanner'
-import { ZONE, AMEN } from '../model/zones'
+import { ZONE, AMEN, isCrossing } from '../model/zones'
 import type { CellStates, NationalPlan } from '../model/simulate'
 import { hasLandBy } from '../model/rules'
 import type { PlannerLens, PlannerTool } from '../state/planner'
@@ -68,7 +68,7 @@ export function cellColors(data: PlannerData, st: CellStates, plan: NationalPlan
         break
       }
       case 'access': fill[i] = st.homes[i] ? (access![i] ? '#10b981' : '#f43f5e') : LAND_GREY; break
-      case 'depth': fill[i] = data.land[i] ? LAND_GREY : SAND; break
+      case 'depth': fill[i] = data.land[i] ? LAND_GREY : isCrossing(z) ? ZONE[z].color : SAND; break
     }
     if (st.status[i] === 1 && lens === 'zone') fill[i] = mix(fill[i]!, '#ffffff', 0.55)
   }

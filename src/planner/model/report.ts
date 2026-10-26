@@ -4,6 +4,7 @@ import { atYear, PHASES } from './population'
 import { isCancelled, reclaimCost, type SimResult, type Snapshot, type SpendKind } from './simulate'
 import { planIssues } from './rules'
 import { CELL_HA, GROUPS, ZONE, ZONES, isHousing, zoneCost, zoneHomes, type ZoneGroup, type ZoneId } from './zones'
+import { LINK_WORDS, islandLinks, type IslandLink } from './islands'
 
 export interface Project { phase: number; zone: ZoneId | 'reclaim'; area: string; cells: number; homes: number; cost: number; done: number }
 export interface PlanReport {
@@ -27,7 +28,16 @@ export interface PlanReport {
   natureAdded: number
   issues: ReturnType<typeof planIssues>
   headline: string[]
+  /** offshore islands joined to the main island (the report's centrepiece when there are any) */
+  islandLinks: IslandLink[]
+  /** bridges, causeways, tunnels and expressways built, by kind */
+  links: { zone: ZoneId; cells: number; cost: number; areas: string[] }[]
 }
+
+/** "A, B and C" */
+export const listWords = (xs: string[]) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`)
+/** how an island is joined, in words */
+export const linkWords = (l: IslandLink) => listWords(l.kinds.map((k) => LINK_WORDS[k]))
 
 const km2 = (cells: number) => (cells * CELL_HA) / 100
 
@@ -75,8 +85,16 @@ export function buildPlanReport(data: PlannerData, sim: SimResult, policy: Popul
   const totalSpend = Object.values(spendByKind).reduce((a, b) => a + (b ?? 0), 0)
   const natureAdded = ((last.byZone.nature ?? 0) - (first.byZone.nature ?? 0)) * CELL_HA
 
+  const joined = islandLinks(data, sim).links
+  const links = (['bridge', 'causeway', 'tunnel', 'highway'] as const).map((zone) => {
+    const ps = projects.filter((p) => p.zone === zone)
+    return { zone: zone as ZoneId, cells: ps.reduce((n, p) => n + p.cells, 0), cost: ps.reduce((n, p) => n + p.cost, 0), areas: [...new Set(ps.map((p) => p.area))] }
+  }).filter((l) => l.cells)
+
   const pop50 = atYear(sim.projection, 2050)
   const headline: string[] = []
+  const by2050 = joined.filter((l) => l.joinedPhase !== null)
+  if (by2050.length) headline.push(`For the first time, ${listWords(by2050.map((l) => l.island.name))} ${by2050.length > 1 ? 'are' : 'is'} joined to the main island, by ${listWords([...new Set(by2050.flatMap((l) => l.kinds))].map((k) => LINK_WORDS[k]))}.`)
   headline.push(`Singapore grows from ${(BASELINE.total / 1e6).toFixed(2)} million people today to ${(pop50.total / 1e6).toFixed(2)} million in 2050, with ${((pop50.bands[3] / pop50.residents) * 100).toFixed(0)}% of residents aged 65 and over.`)
   headline.push(`The plan completes ${Math.round(homesBuilt).toLocaleString('en-SG')} new homes${homesDemolished ? ` and redevelops sites holding ${Math.round(homesDemolished).toLocaleString('en-SG')} older ones` : ''}, leaving ${last.supply >= last.demand ? 'a surplus' : 'a shortfall'} of about ${Math.round(Math.abs(last.supply - last.demand) / 1000)}k homes in 2050.`)
   if (last.reclaimedKm2 > 0.05) headline.push(`${last.reclaimedKm2.toFixed(1)} km² of new land is reclaimed, taking the land area to about ${last.landKm2.toFixed(0)} km².`)
@@ -91,8 +109,10 @@ export function buildPlanReport(data: PlannerData, sim: SimResult, policy: Popul
     stationsAdded: last.stations - first.stations,
     greenChange: last.greenHa - first.greenHa,
     natureAdded,
-    issues: planIssues(sim),
+    issues: planIssues(sim, data),
     headline,
+    islandLinks: joined,
+    links,
   }
 }
 

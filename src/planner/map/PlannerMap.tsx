@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as maplibregl from 'maplibre-gl'
-import type { GeoJSONSource, MapMouseEvent, MapTouchEvent } from 'maplibre-gl'
+import type { ExpressionSpecification, GeoJSONSource, MapMouseEvent, MapTouchEvent } from 'maplibre-gl'
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
-import { Map as MapIcon, Satellite } from 'lucide-react'
+import { Map as MapIcon, Satellite, Sparkles, X } from 'lucide-react'
 import { useStore } from '../../state/store'
 import { FALLBACK_STYLE, MAX_BOUNDS, SATELLITE_ATTRIBUTION, SATELLITE_TILES, SG_BOUNDS, STYLE } from '../../map/style'
 import { useIsMobile } from '../../lib/useIsMobile'
 import { useSheet } from '../../lib/sheet'
 import { usePlanner } from '../state/planner'
 import { cellStates, timelines } from '../model/simulate'
+import { PHASES } from '../model/population'
 import { cellColors } from './colors'
 import { CellCard } from './CellCard'
 
@@ -39,6 +40,9 @@ export function PlannerMap() {
   const tool = usePlanner((s) => s.tool)
   const tab = usePlanner((s) => s.tab)
   const selected = usePlanner((s) => s.selected)
+  const autoResult = usePlanner((s) => s.autoResult)
+  const highlight = usePlanner((s) => s.highlight)
+  const focus = usePlanner((s) => s.focus)
   const basemap = useStore((s) => s.basemap)
   const setBasemap = useStore((s) => s.setBasemap)
   const mobile = useIsMobile()
@@ -100,6 +104,17 @@ export function PlannerMap() {
           'line-width': ['case', ['boolean', ['feature-state', 'sel'], false], 3, ['boolean', ['feature-state', 'hover'], false], 2, 0],
         },
       })
+      // what the last auto-plan changed: 1 = ready by the end of the phase, 2 = still being built
+      const autoColor: ExpressionSpecification = ['case', ['==', ['feature-state', 'auto'], 1], '#facc15', '#e879f9']
+      const autoOn: ExpressionSpecification = ['>', ['coalesce', ['feature-state', 'auto'], 0], 0]
+      map.addLayer({
+        id: 'hex-auto-glow', type: 'line', source: 'hex',
+        paint: { 'line-color': autoColor, 'line-blur': 3, 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 5, 14, 8], 'line-opacity': ['case', autoOn, 0.55, 0] },
+      })
+      map.addLayer({
+        id: 'hex-auto', type: 'line', source: 'hex',
+        paint: { 'line-color': autoColor, 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 0.8, 14, 2.2], 'line-opacity': ['case', autoOn, 1, 0] },
+      })
       map.addLayer({ id: 'lasso-fill', type: 'fill', source: 'lasso', paint: { 'fill-color': '#facc15', 'fill-opacity': 0.2 } })
       map.addLayer({ id: 'lasso-line', type: 'line', source: 'lasso', paint: { 'line-color': '#ca8a04', 'line-width': 2, 'line-dasharray': [1, 1] } })
       setReady(map)
@@ -124,13 +139,44 @@ export function PlannerMap() {
     return () => { try { map.setFeatureState({ source: 'hex', id: selected }, { sel: false }) } catch { /* map removed */ } }
   }, [selected, ready])
 
+  // the last auto-plan's changes in the phase being viewed
+  const marked = useMemo(() => {
+    const cells = highlight && autoResult ? autoResult.changes[phase] ?? [] : []
+    return new Map(cells.map((i) => [i, states.zone[i] && states.status[i] === 0 ? 1 : 2]))
+  }, [highlight, autoResult, phase, states])
+  const markedRef = useRef(new Map<number, number>())
+  useEffect(() => {
+    const map = mapRef.current
+    if (!ready || !map) return
+    for (const i of markedRef.current.keys()) if (!marked.has(i)) map.setFeatureState({ source: 'hex', id: i }, { auto: 0 })
+    for (const [i, v] of marked) if (markedRef.current.get(i) !== v) map.setFeatureState({ source: 'hex', id: i }, { auto: v })
+    markedRef.current = marked
+  }, [marked, ready])
+
+  const dim = marked.size > 0
   useEffect(() => {
     const map = mapRef.current
     if (!ready || !map || !map.getLayer('satellite')) return
     const sat = basemap === 'satellite'
     map.setLayoutProperty('satellite', 'visibility', sat ? 'visible' : 'none')
-    map.setPaintProperty('hex-fill', 'fill-opacity', ['case', ['==', ['feature-state', 'fill'], null], 0, ['boolean', ['feature-state', 'hover'], false], sat ? 0.8 : 0.95, sat ? 0.55 : 0.8])
-  }, [basemap, ready])
+    // while highlighting, everything the auto-plan did not touch fades back
+    const rest = dim ? (sat ? 0.2 : 0.15) : sat ? 0.55 : 0.8
+    map.setPaintProperty('hex-fill', 'fill-opacity', ['case', ['==', ['feature-state', 'fill'], null], 0,
+      ['boolean', ['feature-state', 'hover'], false], sat ? 0.8 : 0.95, ['>', ['coalesce', ['feature-state', 'auto'], 0], 0], 0.95, rest])
+  }, [basemap, ready, dim])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!ready || !map || !focus?.cells.length) return
+    let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity
+    for (const i of focus.cells) {
+      const [x, y] = data.center[i]
+      w = Math.min(w, x); e = Math.max(e, x); s = Math.min(s, y); n = Math.max(n, y)
+    }
+    const pad = 48
+    // the phone sheet is already part of the camera padding
+    map.fitBounds([[w, s], [e, n]], { padding: pad, maxZoom: 14.5, duration: 700 })
+  }, [focus, ready, data])
 
   useEffect(() => {
     const map = mapRef.current
@@ -328,6 +374,28 @@ export function PlannerMap() {
           </button>
         ))}
       </div>
+      {dim && <AutoLegend marked={marked} />}
+    </div>
+  )
+}
+
+/** What the outlines mean while the last auto-plan is highlighted. */
+function AutoLegend({ marked }: { marked: Map<number, number> }) {
+  const phase = usePlanner((s) => s.phase)
+  const kind = usePlanner((s) => s.autoResult?.kind)
+  let ready = 0
+  for (const v of marked.values()) if (v === 1) ready++
+  const st = usePlanner.getState()
+  return (
+    <div className="absolute left-1/2 top-3 z-10 flex max-w-[calc(100%-7rem)] -translate-x-1/2 items-center gap-2 rounded-lg bg-slate-950/90 px-2.5 py-1.5 text-[11px] text-slate-200 shadow-lg ring-1 ring-slate-700 backdrop-blur" role="status">
+      <Sparkles size={13} className="shrink-0 text-amber-300" aria-hidden />
+      <span className="min-w-0">
+        <b>{kind === 'fix' ? 'Fixed' : 'Auto-planned'} in {PHASES[phase].label}:</b>{' '}
+        <span className="whitespace-nowrap"><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-amber-300" />{ready} ready</span>{' '}
+        <span className="whitespace-nowrap"><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-fuchsia-400" />{marked.size - ready} still building</span>
+      </span>
+      <button onClick={() => st.focusOn([...marked.keys()])} className="shrink-0 rounded px-1 text-sky-300 hover:underline">Zoom</button>
+      <button onClick={() => st.setHighlight(false)} className="shrink-0 text-slate-400 hover:text-white" aria-label="Hide highlight"><X size={14} /></button>
     </div>
   )
 }
