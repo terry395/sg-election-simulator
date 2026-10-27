@@ -64,8 +64,13 @@ function alternatives(info: Info): string[] {
   return out
 }
 
+/** "Pasir Ris-Punggol" -> ["pasir ris", "punggol"]; compass words like "North-East" stay whole */
+export const nameParts = (s: string) =>
+  s.toLowerCase().replace(/\b(north|south)-(east|west)\b/g, '$1 $2').split('-').map((p) => p.trim())
+
 /**
  * Unique, number-free names for a set of constituencies.
+ * No two seats share a name, even as one half of a hyphenated name ("Punggol" / "Pasir Ris-Punggol").
  * Seats that would share a name are all renamed together: first by compass direction within
  * their town (Punggol West / Punggol East), then by neighbourhood names (Fernvale, Anchorvale…).
  */
@@ -73,7 +78,10 @@ export function uniqueNames(requests: NameRequest[], blocks: Block[]): string[] 
   const infos = requests.map((r) => describe(r.members, blocks))
   const base = requests.map((r) => r.preferred || suggestName(r.members, blocks))
   const names: (string | null)[] = requests.map((r, d) => (r.locked ? base[d] : null))
-  const used = new Set(names.filter((n): n is string => !!n))
+  const used = new Set<string>()
+  const clashes = (name: string) => nameParts(name).some((p) => used.has(p))
+  const take = (name: string) => { for (const p of nameParts(name)) used.add(p) }
+  for (const n of names) if (n) take(n)
 
   // group the remaining seats by their natural name
   const groups = new Map<string, number[]>()
@@ -84,12 +92,14 @@ export function uniqueNames(requests: NameRequest[], blocks: Block[]): string[] 
     groups.set(base[d], g)
   })
 
-  // unique natural names are kept as they are
-  for (const [name, ds] of groups) {
-    if (ds.length === 1 && !used.has(name) && !hasDigit(name)) {
-      names[ds[0]] = name
-      used.add(name)
-    }
+  // unique natural names are kept as they are; where two share a part, familiar
+  // (GE2025) names win, then the larger seat
+  const singles = [...groups].filter(([name, ds]) => ds.length === 1 && !hasDigit(name)).map(([, ds]) => ds[0])
+  singles.sort((a, b) => Number(!!requests[b].preferred) - Number(!!requests[a].preferred) || infos[b].w - infos[a].w)
+  for (const d of singles) {
+    if (clashes(base[d])) continue
+    names[d] = base[d]
+    take(base[d])
   }
 
   // clashes: give every seat in the group a compass name within its main town
@@ -115,20 +125,20 @@ export function uniqueNames(requests: NameRequest[], blocks: Block[]): string[] 
       // preferred sector first, then its neighbours
       for (const off of [0, 1, -1, 2, -2]) tries.push(`${town} ${DIRECTIONS[(k + off + 8) % 8]}`)
       tries.push(`${town} Central`)
-      const pick = tries.find((t) => !used.has(t))
-      if (pick) { names[d] = pick; used.add(pick) }
+      const pick = tries.find((t) => !clashes(t))
+      if (pick) { names[d] = pick; take(pick) }
     }
   }
 
   // anything still unnamed (or clashing): neighbourhood-based alternatives
   requests.forEach((_, d) => {
     if (names[d] !== null) return
-    let name = alternatives(infos[d]).find((t) => !used.has(t))
+    let name = alternatives(infos[d]).find((t) => !clashes(t))
     // practically unreachable: combine every neighbourhood with every descriptor
-    for (const h of infos[d].hoods) for (const x of DESCRIPTORS) if (!name && !used.has(`${h} ${x}`)) name = `${h} ${x}`
+    for (const h of infos[d].hoods) for (const x of DESCRIPTORS) if (!name && !clashes(`${h} ${x}`)) name = `${h} ${x}`
     name ??= `${infos[d].towns[0] ?? 'Singapore'} ${infos[d].hoods.join('-')}`
     names[d] = name
-    used.add(name)
+    take(name)
   })
   return names as string[]
 }

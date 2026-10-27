@@ -4,7 +4,7 @@ import path from 'node:path'
 import type { Block, GE2025Data } from '../types'
 import { CONSTITUENCY_PALETTE } from '../data/parties'
 import { ge2025Plan } from './stats'
-import { uniqueNames } from './naming'
+import { nameParts, uniqueNames } from './naming'
 import { redistrict, DEFAULT_OPTIONS, type RedistrictOptions } from './redistrict'
 
 const dir = path.join(__dirname, '../../public/data')
@@ -17,6 +17,14 @@ function expectGoodNames(names: string[]) {
   for (const n of names) {
     expect(n.trim().length).toBeGreaterThan(0)
     expect(n, n).not.toMatch(/\d/)
+  }
+  // no name may reappear as half of a hyphenated name ("Punggol" / "Pasir Ris-Punggol")
+  const owner = new Map<string, string>()
+  for (const n of names) {
+    for (const p of nameParts(n)) {
+      expect(owner.get(p), `"${n}" shares "${p}" with "${owner.get(p)}"`).toBeUndefined()
+      owner.set(p, n)
+    }
   }
 }
 
@@ -36,6 +44,20 @@ describe('uniqueNames', () => {
     const tampines = blocks.filter((b) => b.pa === 'TAMPINES' && b.e25 > 0).map((b) => b.id)
     const names = uniqueNames([{ members: tampines.slice(0, 5), preferred: 'Tampines', locked: true }, { members: tampines.slice(5, 10) }], blocks)
     expect(names[0]).toBe('Tampines')
+    expectGoodNames(names)
+  })
+
+  it('does not reuse a name inside a hyphenated name', () => {
+    const tampines = blocks.filter((b) => b.pa === 'TAMPINES' && b.e25 > 0).map((b) => b.id)
+    const names = uniqueNames([{ members: tampines.slice(0, 20), preferred: 'Tampines' }, { members: tampines.slice(20, 25), preferred: 'Tampines-Pasir Ris' }], blocks)
+    expect(names[0]).toBe('Tampines')
+    expectGoodNames(names)
+  })
+
+  it('steers away from parts of locked names', () => {
+    const punggol = blocks.filter((b) => b.pa === 'PUNGGOL' && b.e25 > 0).map((b) => b.id)
+    const names = uniqueNames([{ members: punggol.slice(0, 5), preferred: 'Punggol', locked: true }, { members: punggol.slice(5, 10), preferred: 'Pasir Ris-Punggol' }], blocks)
+    expect(names[0]).toBe('Punggol')
     expectGoodNames(names)
   })
 })
